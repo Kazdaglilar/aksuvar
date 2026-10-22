@@ -1,0 +1,1537 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E8F1FC">
+</head>
+<body>
+<title>Aksuvar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one calm column — small night globe with prayer times, then a simple habit list; bottom tab bar.
+   Single deliberate light look: airy light blue with a clear mid-blue accent; warm amber is kept only for prayer times. */
+:root{
+  --bg:#E8F1FC; --bg2:#F7FBFF; --surface:#FFFFFF; --glass:rgba(255,255,255,.88); --raise:#E2ECF8;
+  --ink:#1B2A41; --muted:#5D6F8D; --faint:#97A6BC; --line:rgba(40,80,140,.11);
+  --sand:#3A7BD5; --sand-ink:#FFFFFF; /* UI accent (blue) */
+  --gold:#B07F2A; /* prayer times only */
+  --good:#2E9A70; --miss:#C95F4E;
+  --display:"Newsreader",Georgia,"Times New Roman",serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:radial-gradient(110% 55% at 50% 12%,var(--bg2),var(--bg) 75%) fixed,var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--sand);outline-offset:2px}
+.app{max-width:520px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 120px}
+
+header.top{display:flex;align-items:center;gap:10px;padding-block:6px 0}
+.place{flex:1;min-width:0;text-align:left;display:flex;flex-direction:column}
+.place b{font-family:var(--display);font-weight:500;font-style:italic;font-size:24px;line-height:1.15}
+.place b::after{content:" ⌄";font-style:normal;font-size:15px;color:var(--faint)}
+.place small{color:var(--muted);font-size:13px}
+.iconbtn{width:44px;height:44px;flex:none;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;color:var(--sand)}
+
+/* globe + prayer */
+.prayer{background:var(--glass);border:1px solid var(--line);border-radius:24px;padding:12px 16px 12px 12px;margin:4px 0 16px}
+.top2{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+#globe{display:block;width:var(--gs,124px);height:var(--gs,124px);touch-action:pan-y;cursor:grab}
+#globe:active{cursor:grabbing}
+.next{display:flex;flex-direction:column;gap:2px;min-width:0}
+.next .lbl{font-size:12px;color:var(--muted)}
+.next h2{margin:0;font-family:var(--display);font-weight:500;font-size:24px;line-height:1.15}
+.next .cd{font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--gold);margin-top:4px}
+.next .cd small{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+.pomo{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.pomo-b{display:flex;align-items:center;gap:10px}
+.ptime{flex:1;display:flex;flex-direction:column;min-width:0}
+.ptime b{font-size:34px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.psub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.psub select{font:inherit;color:var(--sand);font-weight:600;background:none;border:0;padding:0;max-width:60%;cursor:pointer}
+.pomo.run .ptime b{color:var(--sand)}
+.pomo.brk .ptime b{color:var(--good)}
+.pskip{width:100%;padding:11px 14px;border-radius:999px;background:rgba(46,154,112,.12);color:var(--good);font-weight:700;font-size:13.5px;white-space:nowrap}
+.pskip:active{transform:scale(.96)}
+.pbtn{width:44px;height:44px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:18px;font-weight:700}
+.pbtn.main{background:var(--sand);color:var(--sand-ink);width:52px;height:52px;font-size:20px}
+.pbtn.ghosty{background:var(--raise);color:var(--muted)}
+.pnext{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 6px 4px 12px;border-radius:12px;border:1.5px dashed rgba(58,123,213,.35);background:rgba(58,123,213,.04);transition:background .15s,border-color .15s}
+.pnext.filled{border-style:solid;border-color:rgba(58,123,213,.18);background:var(--raise)}
+.pnext.hot{border-color:var(--sand);border-style:solid;background:rgba(58,123,213,.16)}
+.pn-l{font-size:12px;font-weight:600;color:var(--muted);flex:none}
+.pnext select{flex:1;min-width:0;font:inherit;font-size:14px;font-weight:600;color:var(--sand);background:none;border:0;padding:6px 2px;cursor:pointer}
+.pnext:not(.filled) select{color:var(--faint);font-weight:500}
+.pn-x{width:28px;height:28px;flex:none;border-radius:50%;color:var(--muted);font-size:12px}
+.prange{display:flex;align-items:center;gap:8px}
+.pend{display:flex;flex-direction:column;line-height:1.15;font-variant-numeric:tabular-nums;flex:none}
+.pend b{font-size:12.5px;font-weight:600;color:#2C4A86}
+.pend small{font-size:12px;color:var(--muted)}
+.pend.r{text-align:right}.pend.r b{color:var(--ink)}
+.pwrap{position:relative;flex:1;min-width:0}
+.prange .pbar{display:block;height:10px;border-radius:4px;background:var(--raise);position:relative;overflow:hidden}
+.prange .pbar .seg{position:absolute;top:2px;bottom:2px;border-radius:3px;min-width:3px}
+.prange .pbar .seg.f{background:#9DBCE8;opacity:1}
+.prange .pbar .seg.was{z-index:2;background:transparent;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.7);opacity:1}
+.prange .pbar .seg.n{background:var(--gold);opacity:.45}
+.prange .pbar::before{content:"";z-index:1;position:absolute;inset:0 auto 0 0;width:var(--x,0%);border-radius:inherit;background:linear-gradient(90deg,#2C4A86,#5B8DDB 55%,#F2C25B)}
+.pnow{z-index:3;position:absolute;top:50%;left:var(--x,0%);width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#FFF4C9 0%,#FFD45A 45%,#F0A81E 100%);
+  box-shadow:0 0 0 2px var(--surface),0 0 6px 2px rgba(245,170,40,.65)}
+@media (prefers-reduced-motion:no-preference){.pnow{animation:slowblink 3.2s ease-in-out infinite}}
+@keyframes slowblink{0%,100%{opacity:1}50%{opacity:.35}}
+.pbar .p{background:rgba(40,80,140,.16)}
+.pbar{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;background:var(--raise)}
+.pbar i{display:block;height:100%;min-width:2px}
+.pbar .f{background:var(--sand)}.pbar .s,.pbar .l{background:var(--good);opacity:.6}.pbar .n{background:var(--gold);opacity:.7}.pbar .x{background:transparent}
+.pline{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+.pline b{color:var(--ink);font-weight:600}
+.pdots{display:flex;gap:4px;flex:none}
+.pdots i{width:7px;height:7px;border-radius:50%;background:var(--raise);box-shadow:inset 0 0 0 1.5px rgba(58,123,213,.35)}
+.pdots i.on{background:var(--sand);box-shadow:none}
+.tl{position:relative;margin-top:8px;border-top:1px solid var(--line);padding-top:12px}
+.track{position:absolute;left:8.333%;right:8.333%;top:36px;height:6px;display:flex;gap:3px}
+.track i{flex:1;border-radius:3px;background:rgba(40,80,140,.08);overflow:hidden;position:relative}
+.track i::after{content:"";position:absolute;inset:0;width:var(--f,0%);background:rgba(176,127,42,.38);border-radius:inherit}
+.marks{position:relative;display:grid;grid-template-columns:repeat(6,1fr)}
+.m{display:flex;flex-direction:column;align-items:center;gap:6px;font-variant-numeric:tabular-nums;min-width:0}
+.m span{font-size:11px;line-height:15px;color:var(--muted)}
+.m em{width:12px;height:12px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 2px rgba(40,80,140,.22)}
+.m b{font-size:14px;font-weight:600}
+.m.past em{background:#D6B87E;box-shadow:none}
+.m.past b,.m.past span{color:var(--faint)}
+.m.now em{background:var(--gold);box-shadow:0 0 0 4px rgba(176,127,42,.18)}
+.m.now span,.m.now b{color:var(--gold)}
+.m small{font-size:10px;line-height:12px;color:var(--faint);margin-top:-4px}
+.m.nx em{box-shadow:inset 0 0 0 2px var(--gold)}
+@media (max-width:360px){.m b{font-size:12.5px}.m span{font-size:10px}}
+
+/* habits */
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:14px 2px 8px}
+.sec h3{margin:0;font-family:var(--display);font-weight:500;font-size:22px}
+.sec span{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px}
+.day{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;border-radius:14px;color:var(--muted);font-size:12px}
+.day b{font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.day i{width:22px;height:4px;border-radius:2px;background:var(--line);overflow:hidden;display:block}
+.day i::after{content:"";display:block;height:100%;width:var(--p);background:var(--good)}
+.day.future{opacity:.35}
+.day.sel{background:var(--surface);box-shadow:inset 0 0 0 1.5px rgba(58,123,213,.55),0 2px 8px rgba(40,80,140,.08)}
+.day.sel b{color:var(--sand)}
+.list{display:flex;flex-direction:column;gap:10px}
+.sw{--c:#8DBFA3;position:relative;border-radius:20px;overflow:hidden}
+.sw.gone{transition:height .22s ease,margin .22s ease,opacity .22s}
+.sw-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:22px;gap:8px;border-radius:20px;background:color-mix(in oklab,var(--miss) 28%,var(--surface));color:var(--miss);font-weight:600;font-size:14px;transition:background .15s,color .15s}
+.sw.arm .sw-bg{background:var(--miss);color:#FFFFFF}
+.sw-bg svg{width:18px;height:18px}
+.card{box-shadow:inset 4px 0 0 var(--c),0 1px 3px rgba(40,80,140,.06);position:relative;touch-action:pan-y;transition:transform .25s cubic-bezier(.2,.8,.2,1);--c:#8DBFA3;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 12px 12px 14px;display:flex;flex-direction:column;gap:10px}
+.card.done{background:color-mix(in oklab,var(--c) 9%,var(--surface))}
+.r1{display:flex;align-items:center;gap:12px}
+.ico{width:42px;height:42px;flex:none;border-radius:14px;display:grid;place-items:center;font-size:22px;background:color-mix(in oklab,var(--c) 16%,transparent)}
+.meta{flex:1;min-width:0;text-align:left;display:flex;flex-direction:column}
+.meta b{font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.meta small{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.minus{width:34px;height:34px;flex:none;border-radius:50%;font-size:18px;color:var(--muted);background:var(--raise)}
+.act{position:relative;width:48px;height:48px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:18px;font-weight:700;color:color-mix(in oklab,var(--c),var(--ink) 40%)}
+.act svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.act span{position:relative}
+.card.done .act{background:var(--c);color:#FFFFFF}
+.r2{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:54px}
+.dots{display:flex;gap:5px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--raise)}
+.dots i.h{background:color-mix(in oklab,var(--c) 50%,transparent)}
+.dots i.f{background:var(--c)}
+.ptag{color:var(--sand);font-weight:600;margin-right:6px}
+.streak{text-align:right;font-size:12px;font-variant-numeric:tabular-nums}
+.streak.good{color:var(--good)} .streak.miss{color:var(--miss)} .streak.none{color:var(--faint)}
+.grp-h{display:flex;align-items:center;justify-content:space-between;margin:10px 2px 0}
+.grp-h:first-child{margin-top:0}
+.grp-h h4{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:baseline}
+.grp-h h4 span{font-weight:500;letter-spacing:0;color:var(--faint);font-variant-numeric:tabular-nums}
+.addlink{color:var(--sand);font-size:13px;font-weight:600;padding:6px 2px}
+.empty-add{width:100%;padding:16px;border-radius:18px;border:1px dashed rgba(40,80,140,.16);color:var(--muted);font-size:14px}
+.empty-add b{color:var(--sand);font-weight:600}
+.plbl{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;margin-bottom:-4px}
+.presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.pre{display:flex;align-items:center;gap:10px;text-align:left;padding:10px;border-radius:14px;background:var(--bg);border:1px solid var(--line);min-width:0}
+.pre:active{transform:scale(.97)}
+.pe{font-size:20px;width:26px;text-align:center;flex:none}
+.pt{display:flex;flex-direction:column;min-width:0;flex:1}
+.pt b{font-size:13.5px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.pt small{font-size:11.5px;color:var(--muted)}
+.pp{width:24px;height:24px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--raise);color:var(--sand);font-weight:700}
+.pre.has{opacity:.55;cursor:default}
+.pre.has .pp{background:rgba(148,196,166,.2);color:var(--good)}
+.empty{text-align:center;color:var(--muted);padding:32px 12px;background:var(--surface);border-radius:20px;border:1px dashed var(--line)}
+.hint{font-size:12px;color:var(--faint);text-align:center;margin:16px 8px 0}
+.banner{font-size:13px;color:var(--muted);background:var(--surface);border-radius:14px;padding:10px 12px;margin:0 0 10px}
+
+/* tab bar */
+nav.tabs{position:fixed;z-index:5;left:0;right:0;bottom:0;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:linear-gradient(transparent,var(--bg) 45%)}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--surface);border-radius:999px;padding:5px;border:1px solid var(--line)}
+nav.tabs button{border-radius:999px;padding:10px 4px;font-weight:600;font-size:14px;color:var(--muted)}
+nav.tabs button[aria-current="true"]{background:var(--raise);color:var(--sand)}
+
+/* stats & settings */
+.ptitle{font-family:var(--display);font-weight:500;font-size:28px;margin:10px 2px 14px}
+.stat{background:var(--surface);border-radius:20px;padding:14px 16px;border:1px solid var(--line)}
+.stat h3{margin:0 0 10px;font-size:16px;font-weight:600;display:flex;gap:8px;align-items:center}
+.stat p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.nums div{display:flex;flex-direction:column}
+.nums b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.nums small{color:var(--muted);font-size:12px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:80px;margin-top:4px}
+.bars div{flex:1;background:var(--good);border-radius:4px 4px 2px 2px;min-height:3px;opacity:.7}
+.barlab{display:flex;gap:4px;font-size:11px;color:var(--muted);margin-top:4px}
+.barlab span{flex:1;text-align:center;font-variant-numeric:tabular-nums}
+
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(20,40,70,.35);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-top:1px solid var(--line);border-radius:24px 24px 0 0;max-height:88%;overflow:auto;padding:18px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+.sheet .in{max-width:500px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.qbtn{flex:none;display:flex;align-items:center;gap:6px;padding:9px 14px 9px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--sand);font-weight:700;font-size:14px;box-shadow:0 1px 3px rgba(40,80,140,.06)}
+.qbtn svg{width:22px;height:22px}
+.qsum{margin:-4px 0 0;color:var(--muted);font-size:14px}
+.qsum b{color:var(--ink)}
+.qdialwrap{display:grid;place-items:center}
+.qdial{width:min(300px,78vw);height:auto;max-width:100%;overflow:visible}
+.qdial .rot{transition:transform .12s linear}
+.qinfo{display:flex;flex-direction:column;gap:8px}
+.qrow{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border-radius:14px;padding:10px 12px;font-size:14px;line-height:1.4}
+.qrow .qi{font-size:18px;flex:none;width:24px;text-align:center}
+.qrow b{color:var(--ink)}
+.qnote{margin:0;font-size:12.5px;color:var(--muted)}
+.shead{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-18px;z-index:2;background:var(--surface);margin:-18px -4px 0;padding:18px 4px 6px}
+.xbtn{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--raise);color:var(--muted)}
+.xbtn:hover{color:var(--ink)}
+.xbtn svg{width:18px;height:18px}
+.sheet h2{font-family:var(--display);font-weight:500;font-size:24px;margin:0}
+.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:500}
+input,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;width:100%}
+textarea{min-height:110px;font-size:12px;font-family:ui-monospace,monospace}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border-radius:14px;padding:4px}
+.seg button{padding:10px 4px;border-radius:10px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--raise);color:var(--ink)}
+.seg-help{font-size:12px;color:var(--faint);margin-top:2px}
+.tg{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;cursor:pointer}
+.tg input{width:20px;height:20px;accent-color:var(--sand);flex:none;padding:0}
+.rhead{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.rback{color:var(--sand);font-weight:600;font-size:14px;padding:6px 0 0}
+.raddbtn{width:100%;padding:13px;border-radius:16px;border:1.5px dashed rgba(58,123,213,.4);color:var(--sand);font-weight:700;margin-bottom:12px;background:rgba(58,123,213,.04)}
+.rfolders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rfold{display:flex;align-items:center;gap:10px;text-align:left;padding:14px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.rfold:active{transform:scale(.98)}
+.rfold .re{font-size:24px;width:30px;text-align:center;flex:none}
+.rfold b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.rfold small{font-size:12.5px;color:var(--muted)}
+.rfold.empty0 small{color:var(--faint)}
+.rfold.mine{box-shadow:inset 3px 0 0 var(--sand)}
+@media (min-width:820px){.rfolders{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rsub{margin:-6px 2px 14px;color:var(--muted);font-size:14px}
+.radd{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.radd h3{margin:0}
+.rerr{margin:0;color:var(--miss);font-size:13px}
+.rtools{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.rtools input{background:var(--surface)}
+.rchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.rchips button{flex:none;padding:7px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.rchips button[aria-pressed="true"]{background:var(--sand);border-color:var(--sand);color:var(--sand-ink)}
+.rchips button small{font-weight:500;opacity:.75;margin-left:4px}
+.rgrp{margin:6px 2px 0;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--muted)}
+.ritem{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px 14px}
+.rfav{width:36px;height:36px;flex:none;border-radius:10px;display:grid;place-items:center;font-weight:700;color:var(--sand);background:var(--raise);text-transform:uppercase}
+.rbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rbody a{color:var(--ink);font-weight:600;font-size:15px;text-decoration:none;overflow-wrap:anywhere}
+.rbody a:hover{color:var(--sand);text-decoration:underline}
+.rdom{font-size:12.5px;color:var(--sand);overflow-wrap:anywhere}
+.rnote{font-size:13px;color:var(--muted)}
+.rmeta{font-size:11.5px;color:var(--faint);margin-top:2px}
+.racts{display:flex;flex-direction:column;gap:4px;flex:none}
+.racts button{font-size:12px;font-weight:600;color:var(--muted);padding:4px 8px;border-radius:8px;background:var(--raise)}
+.racts button.del{color:var(--miss)}
+.cprev{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}
+.cprev i{flex:1;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--pc) var(--pf,62%),color-mix(in oklab,var(--pc) 20%,transparent) var(--pf,62%))}
+.cprev span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:62px;text-align:right}
+.ctable{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px;margin-top:8px}
+.ctable button{aspect-ratio:1;border-radius:8px;max-width:100%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.ctable button[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:2px}
+.custom{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--muted)}
+.custom input{width:44px;height:32px;padding:0;border-radius:10px;border:1px solid var(--line);background:none;cursor:pointer}
+.custom input::-webkit-color-swatch-wrapper{padding:3px}.custom input::-webkit-color-swatch{border:0;border-radius:7px}
+.primary{background:var(--sand);color:var(--sand-ink);border-radius:16px;padding:14px;font-weight:700}
+.ghost{border:1px solid var(--line);background:var(--raise);border-radius:16px;padding:12px;font-weight:600}
+.danger{color:var(--miss)}
+.cities{display:flex;flex-direction:column;max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:14px}
+.cities button{display:flex;justify-content:space-between;gap:10px;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+.cities button:last-child{border-bottom:0}
+.cities button small{color:var(--muted)}
+.cities button[aria-pressed="true"]{color:var(--sand)}
+.cgrp{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;padding:8px 14px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--sand);background:var(--raise);border-bottom:1px solid var(--line)}
+.cgrp small{color:var(--faint);font-weight:500}
+.toast[hidden]{display:none}
+.dropbar[hidden]{display:none}
+.dropbar{position:fixed;z-index:40;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:999px;background:var(--surface);color:var(--sand);font-weight:700;font-size:15px;border:2px dashed rgba(58,123,213,.45);box-shadow:0 8px 24px rgba(40,80,140,.18);white-space:nowrap}
+.dropbar .dz-ico{font-size:18px}
+.dropbar.hot,.pomo.hot{background:var(--sand);color:#fff;border-color:var(--sand)}
+.pomo{transition:background .15s,box-shadow .15s;border-radius:16px}
+.pomo.ready{box-shadow:0 0 0 2px rgba(58,123,213,.35);background:rgba(58,123,213,.05)}
+.pomo.hot{background:rgba(58,123,213,.14);box-shadow:0 0 0 2px var(--sand);color:inherit}
+.pomo.flash,.pnext.flash{animation:pflash .9s ease}
+@keyframes pflash{0%{box-shadow:0 0 0 0 rgba(58,123,213,.6)}100%{box-shadow:0 0 0 14px rgba(58,123,213,0)}}
+.ghost-card{position:fixed;z-index:39;pointer-events:none;margin:0;opacity:.95;transform:scale(.92) rotate(-1.5deg);box-shadow:0 18px 40px rgba(20,50,100,.28)!important;transition:transform .12s}
+.sw.lifting .card{opacity:.35}
+.sw.lifting .sw-bg{opacity:0}
+.card.pressing{transform:scale(.98)}
+.toast button{color:var(--sand);font-weight:700;padding:2px 0}
+.toast{display:flex;align-items:center;gap:14px;white-space:nowrap;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));background:var(--raise);border:1px solid var(--line);color:var(--ink);padding:10px 16px;border-radius:999px;font-size:14px;z-index:30}
+@media (prefers-reduced-motion:no-preference){.act,.minus,.day{transition:transform .12s,background .2s}.act:active,.minus:active{transform:scale(.92)}}
+
+/* ---------- tablet & large screens ---------- */
+@media (min-width:820px){
+  .app{max-width:780px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));padding-block:18px 120px}
+  header.top{padding-block:4px 10px}
+  .place b{font-size:30px}
+  .next h2{font-size:28px}
+  .next .cd{font-size:28px}
+  .colB .list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+  .colB .list>.grp-h,.colB .list>.empty-add{grid-column:1/-1}
+  .colB .list>.grp-h:not(:first-child){margin-top:14px}
+  .hint{text-align:left;margin-left:2px}
+  #vStats .list,#vSettings .list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:14px}
+  #vStats .list>.stat:first-child{grid-column:1/-1}
+  .ptitle{font-size:34px}
+  .sheet{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:min(580px,92vw);max-height:86vh;border-radius:24px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(20,50,100,.25);padding-bottom:20px}
+  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
+/* landscape tablets / laptops: prayer + Pomodoro as a sticky left column, lists on the right */
+@media (min-width:1100px){
+  .app{max-width:1180px}
+  #vToday:not([hidden]){display:grid;grid-template-columns:minmax(380px,440px) minmax(0,1fr);gap:32px;align-items:start}
+  .colA{position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+  .colB{min-width:0;padding-top:6px}
+  .sec{margin-top:4px}
+}
+
+/* brand mark: fixed shape and colour on purpose — not tied to theme tokens */
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;padding-block:4px 10px}
+.brand .mark{width:30px;height:30px;flex:none;display:block}
+.brand span{font-family:"Newsreader",Georgia,serif;font-weight:600;font-size:22px;letter-spacing:.02em;color:#0B0B0B}
+</style>
+
+<div class="app">
+  <div class="brand"><!-- Aksuvar marka işareti: sabit; tema/renk değişikliklerinden etkilenmez --><svg class="mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="50.00,2.00 52.83,43.16 71.21,28.79 56.84,47.17 98.00,50.00 56.84,52.83 71.21,71.21 52.83,56.84 50.00,98.00 47.17,56.84 28.79,71.21 43.16,52.83 2.00,50.00 43.16,47.17 28.79,28.79 47.17,43.16" fill="#0B0B0B"/></svg><span>Aksuvar</span></div>
+  <header class="top">
+    <button class="place" id="placeBtn" aria-label="Şehri değiştir"><b id="placeName">İstanbul</b><small id="hijri"></small></button>
+    <button type="button" class="qbtn" id="qiblaBtn" aria-label="Kıble pusulasını aç"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4.5l2.6 7.5L12 19.5 9.4 12z" fill="currentColor" opacity=".9"/><circle cx="12" cy="12" r="1.4" fill="var(--surface)"/></svg><span>Kıble</span></button>
+  </header>
+
+  <section id="vToday">
+   <div class="colA">
+    <div class="sec"><h3 id="dayTitle">Bugün</h3><span id="daySum"></span></div>
+    <div class="week" id="week"></div>
+    <div class="prayer">
+      <div class="top2">
+        <canvas id="globe" role="img" aria-label="Dünya küresi: altın çizgiler namaz vaktinin girdiği yerleri temsilî olarak gösterir. Yana sürükleyerek çevirebilirsin." title="Temsilî çizim · sürükleyip çevir"></canvas>
+        <div class="next" id="prayer"></div>
+      </div>
+      <div id="tlBox"></div>
+      <div class="pomo" id="pomo">
+        <div class="pomo-b">
+          <div class="ptime">
+            <b id="pTime">25:00</b>
+            <span class="psub"><span id="pSub">Odak</span> · <select id="pHabit" aria-label="Sürenin yazılacağı ders"></select></span>
+          </div>
+          <button type="button" class="pbtn ghosty" id="pReset" aria-label="Sıfırla">↺</button>
+          <button type="button" class="pbtn main" id="pPlay" aria-label="Başlat">▶</button>
+        </div>
+        <button type="button" class="pskip" id="pSkip" hidden>Molayı atla, sıradaki odak turuna geç ⏭</button>
+        <div class="pnext" id="pNextBox">
+          <span class="pn-l">Sıradaki ders</span>
+          <select id="pNext" aria-label="Sıradaki ders"></select>
+          <button type="button" class="pn-x" id="pNextClear" aria-label="Sıradaki dersi boşalt" hidden>✕</button>
+        </div>
+        <div class="prange">
+          <span class="pend" id="pFrom"></span>
+          <div class="pwrap"><div class="pbar" id="pBar"></div><span class="pnow" id="pNow" aria-hidden="true"></span></div>
+          <span class="pend r" id="pTo"></span>
+        </div>
+        <div class="pline"><span id="pPlan"></span><span class="pdots" id="pDots"></span></div>
+      </div>
+    </div>
+   </div>
+   <div class="colB">
+    <p class="banner" id="banner" hidden>Örnek ders ve alışkanlıklarla açıldı. Adına dokunup düzenleyebilir, sola kaydırıp silebilirsin.</p>
+    <div class="list" id="list"></div>
+    <p class="hint">İşaretlemek için daireye, düzenlemek için ada dokun. Basılı tutup Pomodoro'ya sürükle, silmek için sola kaydır.</p>
+   </div>
+  </section>
+
+  <section id="vRes" hidden>
+    <div class="rhead">
+      <button type="button" class="rback" id="rBack" hidden aria-label="Tüm derslere dön">‹ Tüm dersler</button>
+      <h1 class="ptitle" id="resTitle">Ders kaynakları</h1>
+    </div>
+    <p class="rsub" id="resSub">Kaynaklar yükleniyor…</p>
+    <div class="rtools"><input id="rSearch" type="search" placeholder="Bütün kaynaklarda ara" aria-label="Kaynaklarda ara"></div>
+    <button type="button" class="raddbtn" id="rOpenForm" hidden>+ Link ekle</button>
+    <form class="stat radd" id="resForm" hidden autocomplete="off">
+      <h3 id="resFormTitle">Link ekle</h3>
+      <label class="f" id="rSubjectWrap">Ders<input id="rSubject" list="rSubjects" required placeholder="Örn. Arapça"></label>
+      <label class="f">Bağlantı<input id="rUrl" required inputmode="url" placeholder="Web adresini yapıştır: https://…"></label>
+      <label class="f">Başlık<input id="rTitle" maxlength="140" placeholder="Boş bırakırsan site adı yazılır"></label>
+      <label class="f">Not (isteğe bağlı)<input id="rNote" maxlength="240" placeholder="Ne işe yarar, hangi bölüm…"></label>
+      <datalist id="rSubjects"></datalist>
+      <div class="row"><button type="button" class="ghost" id="rCancel">Vazgeç</button><button class="primary" type="submit" id="rSave">Ekle</button></div>
+      <p class="rerr" id="rErr" hidden></p>
+    </form>
+    <div class="rfolders" id="rFolders"></div>
+    <div class="list" id="resList"></div>
+  </section>
+  <section id="vStats" hidden><h1 class="ptitle">İstatistikler</h1><div class="list" id="stats"></div></section>
+
+  <section id="vSettings" hidden>
+    <h1 class="ptitle">Ayarlar</h1>
+    <div class="list">
+      <div class="stat"><h3>Şehir</h3><p>Namaz vakitleri ve küre bu şehre göre gösterilir. Vakitler Diyanet açılarıyla hesaplanan yaklaşık değerlerdir.</p><button class="ghost" id="cityBtn2" style="width:100%">Şehir seç</button></div>
+      <div class="stat"><h3>Ses ve titreşim</h3><p>Sayfa açıkken çalışır. Android telefonlarda titrer; iPhone ve iPad tarayıcıları titreşimi desteklemez, orada yalnızca zil sesi ve bildirim çıkar.</p>
+        <label class="tg"><input type="checkbox" id="vSound"><span>Uyarı sesleri (odak, mola, namaz)</span></label>
+        <p style="margin:8px 0 0;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--muted)">TİTREŞİM</p>
+        <label class="tg"><input type="checkbox" id="vPomo"><span>Pomodoro odak turu bitince</span></label>
+        <label class="tg"><input type="checkbox" id="vBrk"><span>Mola bitince</span></label>
+        <label class="tg"><input type="checkbox" id="vPrayer"><span>Namaz vaktine 5 dakika kala</span></label>
+        <div class="row" style="margin-top:10px;align-items:center"><button type="button" class="ghost" id="vTest" style="flex:0 0 auto;padding:10px 16px">Sesi ve titreşimi dene</button><span id="vStatus" style="font-size:13px;color:var(--muted)"></span></div></div>
+      <div class="stat"><h3>Pomodoro</h3><p>Dakika olarak süreler. Her 4 odak turundan sonra uzun mola gelir.</p>
+        <div class="row">
+          <label class="f">Odak<input id="sFocus" type="number" min="1" max="120" inputmode="numeric"></label>
+          <label class="f">Kısa mola<input id="sShort" type="number" min="1" max="60" inputmode="numeric"></label>
+          <label class="f">Uzun mola<input id="sLong" type="number" min="1" max="90" inputmode="numeric"></label>
+        </div></div>
+      <div class="stat"><h3>Yedekle</h3><p>Veriler yalnızca bu tarayıcıda durur. Metni kopyalayıp sakla, başka cihazda içe aktar.</p>
+        <textarea id="exportBox" readonly aria-label="Yedek metni"></textarea>
+        <div class="row" style="margin-top:10px"><button class="ghost" id="copyBtn">Kopyala</button></div></div>
+      <div class="stat"><h3>İçe aktar</h3>
+        <textarea id="importBox" placeholder="Yedek metnini buraya yapıştır" aria-label="İçe aktarılacak yedek"></textarea>
+        <div class="row" style="margin-top:10px"><button class="ghost" id="importBtn">İçe aktar</button></div></div>
+      <div class="stat"><h3>Sıfırla</h3><button class="ghost danger" id="resetBtn" style="width:100%">Tüm alışkanlıkları sil</button></div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs"><div class="in">
+  <button data-v="vToday" aria-current="true">Bugün</button>
+  <button data-v="vRes">Kaynaklar</button>
+  <button data-v="vStats">İstatistik</button>
+  <button data-v="vSettings">Ayarlar</button>
+</div></nav>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <form class="in" id="form">
+    <div class="shead"><h2 id="sheetTitle">Ekle</h2><button type="button" class="xbtn" data-close aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="seg" id="fKind" style="grid-template-columns:repeat(2,1fr)">
+      <button type="button" data-k="ders">Ders</button>
+      <button type="button" data-k="aliskanlik">Alışkanlık</button>
+    </div>
+    <div id="presetWrap">
+      <div class="plbl">Hazır öneriler · dokun, hemen eklensin</div>
+      <div class="presets" id="presets"></div>
+    </div>
+    <div class="plbl" id="customTitle">Kendin oluştur</div>
+    <div class="row">
+      <label class="f" style="flex:0 0 72px">Simge<input id="fEmoji" maxlength="4" value="⭐" style="text-align:center;font-size:22px"></label>
+      <label class="f">Ad<input id="fName" required placeholder="Örn. Kur'an okumak"></label>
+    </div>
+    <div class="f">Nasıl takip edilsin?
+      <div class="seg" id="fType">
+        <button type="button" data-t="check">Tek dokunuş</button>
+        <button type="button" data-t="count">Sayarak</button>
+        <button type="button" data-t="timer">Süreyle</button>
+      </div>
+      <div class="seg-help" id="typeHelp"></div>
+    </div>
+    <label class="f" id="goalWrap"><span id="goalLbl">Günlük hedef</span><input id="fGoal" type="number" min="1" inputmode="numeric" value="2"></label>
+    <div class="f">Renk
+      <div class="cprev"><i id="cBar"></i><span id="cHex"></span></div>
+      <div class="ctable" id="fColor" role="group" aria-label="Renk tablosu"></div>
+      <label class="custom"><input type="color" id="fCustom" aria-label="Özel renk seç"> Tabloda yoksa kendi rengini seç</label>
+    </div>
+    <div class="row"><button type="button" class="ghost" id="doneBtn">Kapat</button><button class="primary" type="submit">Kaydet</button></div>
+    <div class="row" id="editRow">
+      <button type="button" class="ghost danger" id="delBtn">Sil</button>
+      <button type="button" class="ghost" id="cancelBtn">Vazgeç</button>
+    </div>
+  </form>
+</div>
+<div class="sheet" id="qiblaSheet" hidden role="dialog" aria-modal="true" aria-labelledby="qTitle">
+  <div class="in">
+    <div class="shead"><h2 id="qTitle">Kıble</h2><button type="button" class="xbtn" data-close aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="qsum" id="qSum"></p>
+    <div class="qdialwrap"><svg class="qdial" id="qDial" viewBox="0 0 300 300" role="img" aria-label="Kıble pusulası"></svg></div>
+    <div class="qinfo" id="qInfo"></div>
+    <button type="button" class="ghost" id="qLive">Canlı pusulayı aç (telefonun pusulası)</button>
+    <p class="qnote" id="qNote">Telefonun pusula uygulamasıyla kuzeyi bul, sonra kuzeyden saat yönünde kıble açısı kadar dön. Güneş görünüyorsa aşağıdaki güneş yöntemi pusulasız da çalışır.</p>
+  </div>
+</div>
+<div class="sheet" id="citySheet" hidden role="dialog" aria-modal="true" aria-labelledby="cityTitle">
+  <div class="in">
+    <div class="shead"><h2 id="cityTitle">Şehir seç</h2><button type="button" class="xbtn" data-close aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <input id="cityQ" placeholder="Şehir ya da ülke ara" aria-label="Şehir ya da ülke ara" autocomplete="off">
+    <div class="cities" id="cityList"></div>
+    <button type="button" class="ghost" id="cityClose">Kapat</button>
+  </div>
+</div>
+<div class="dropbar" id="dropBar" hidden><span class="dz-ico">⏱</span><span>Pomodoro'ya bırak</span></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- habits ---------- */
+const KEY='aliskanlik-defteri-v1';
+const COLORS=['#8DBFA3','#86B6C2','#9FAED6','#B7A3CF','#D3A3B4','#D4AE8A','#CDBF84','#A8B98A'];
+const DAYS=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const pad=n=>String(n).padStart(2,'0');
+const key=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+function seed(){
+  const t=today(),mk=(fn,days)=>{const l={};for(let i=1;i<=days;i++){const v=fn(i);if(v)l[key(addDays(t,-i))]=v}return l};
+  return {habits:[
+    {id:uid(),kind:'ders',name:'Arapça',emoji:'🔤',type:'timer',goal:60,color:COLORS[0],created:key(addDays(t,-40)),log:mk(i=>i%3===0?3600:i%4===0?1800:0,40)},
+    {id:uid(),name:'Diş fırçalama',emoji:'🪥',type:'count',goal:2,color:COLORS[1],created:key(addDays(t,-30)),log:mk(i=>i<4?2:i%2?1:2,30)},
+    {id:uid(),name:'Sabah yürüyüşü',emoji:'🚶',type:'check',goal:1,color:COLORS[5],created:key(addDays(t,-10)),log:mk(i=>i===2||i===3||i===6?1:0,10)},
+  ],timer:null,example:true,city:'İstanbul'};
+}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!Array.isArray(S.habits))S=seed();
+if(!S.city)S.city='İstanbul';
+const OLD_COLORS=['#8FD3A8','#7CCFD0','#9DB7F0','#C4A6F0','#F2A6C2','#F5B98A','#EED37A','#B9C97A'];
+S.habits.forEach(h=>{if(!h.color||OLD_COLORS.includes(h.color))h.color=COLORS[S.habits.indexOf(h)%COLORS.length];if(!h.kind)h.kind='aliskanlik'});
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+let sel=key(today()),view='vToday';
+function val(h,k){let v=h.log[k]||0;if(h.type==='timer'&&S.timer&&S.timer.id===h.id&&S.timer.date===k)v+=Math.floor((Date.now()-S.timer.start)/1000);return v}
+function frac(h,k){const v=val(h,k);if(h.type==='check')return v?1:0;if(h.type==='count')return Math.min(v/h.goal,1);return Math.min(v/(h.goal*60),1)}
+const done=(h,k)=>frac(h,k)>=1;
+function fmtMin(min){min=Math.round(min);const h=Math.floor(min/60),m=min%60;return h?`${h} sa${m?` ${m} dk`:''}`:`${m} dk`}
+function progressText(h,k){
+  const v=val(h,k);
+  if(h.type==='check')return v?'Yapıldı':'Bugün yapılmadı';
+  if(h.type==='count')return `${v} / ${h.goal} kez`;
+  if(S.timer&&S.timer.id===h.id)return `Sürüyor · ${Math.floor(v/60)}:${pad(v%60)} / ${fmtMin(h.goal)}`;
+  return `${fmtMin(v/60)} / ${fmtMin(h.goal)}`;
+}
+function streak(h){
+  const t=today();let d=done(h,key(t))?t:addDays(t,-1),n=0;
+  while(done(h,key(d))){n++;d=addDays(d,-1)}
+  if(n)return{cls:'good',txt:`${n} gün üst üste`};
+  let m=0;d=addDays(t,-1);while(key(d)>=h.created&&!done(h,key(d))&&m<99){m++;d=addDays(d,-1)}
+  return m?{cls:'miss',txt:`${m} gündür yapılmadı`}:{cls:'none',txt:'Yeni başladı'};
+}
+function ring(f,size,stroke,color,track){
+  const r=(size-stroke)/2,c=2*Math.PI*r;
+  return `<svg viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${track}" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-f)}"/></svg>`;
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function renderWeek(){
+  const t=today(),tk=key(t);let html='';
+  for(let i=-5;i<=1;i++){
+    const d=addDays(t,i),k=key(d),fut=k>tk,hs=S.habits.filter(h=>h.created<=k);
+    const f=hs.length?hs.reduce((a,h)=>a+frac(h,k),0)/hs.length:0;
+    html+=`<button class="day${k===sel?' sel':''}${fut?' future':''}" data-k="${k}" ${fut?'disabled':''} aria-label="${d.getDate()} ${MONTHS[d.getMonth()]}"><span>${DAYS[d.getDay()]}</span><b>${d.getDate()}</b><i style="--p:${Math.round(f*100)}%"></i></button>`;
+  }
+  week.innerHTML=html;
+  const isT=sel===tk,sd=new Date(sel+'T00:00');
+  dayTitle.textContent=isT?'Bugün':`${sd.getDate()} ${MONTHS[sd.getMonth()]}`;
+  const n=S.habits.filter(h=>done(h,sel)).length;
+  daySum.textContent=S.habits.length?`${n} / ${S.habits.length} tamam`:'';
+}
+function renderList(){
+  const t=today();
+  const card=h=>{
+    const f=frac(h,sel),v=val(h,sel),running=S.timer&&S.timer.id===h.id,ok=f>=1,st=streak(h);
+    const icon=h.type==='timer'?(running?'❚❚':ok?'✓':'▶'):ok?'✓':'+';
+    let dots='';for(let i=6;i>=0;i--){const k=key(addDays(t,-i)),g=frac(h,k);dots+=`<i class="${g>=1?'f':g>0?'h':''}"></i>`}
+    return `<div class="sw" data-id="${h.id}" style="--c:${h.color}"><div class="sw-bg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>Sil</div><article class="card${ok?' done':''}" style="--c:${h.color}">
+      <div class="r1">
+        <span class="ico" aria-hidden="true">${esc(h.emoji)}</span>
+        <button class="meta" data-edit="${h.id}"><b>${esc(h.name)}</b><small>${progressText(h,sel)}</small></button>
+        ${h.type==='count'&&v>0?`<button class="minus" data-minus="${h.id}" aria-label="Bir azalt">−</button>`:''}
+        <button class="act" data-act="${h.id}" aria-label="${esc(h.name)} işaretle">${ok?'':ring(f,48,4,h.color,'rgba(40,80,140,.1)')}<span>${icon}</span></button>
+      </div>
+      <div class="r2"><span class="dots" aria-label="Son 7 gün">${dots}</span><span class="streak ${st.cls}">${S.pomo&&S.pomo.habitId===h.id?'<span class="ptag" title="Şu an Pomodoro\'da">⏱</span>':S.pomo&&S.pomo.nextId===h.id?'<span class="ptag" title="Sıradaki ders">⏭</span>':''}${st.txt}</span></div>
+    </article></div>`};
+  list.innerHTML=[['ders','Dersler','Ders ekle'],['aliskanlik','Alışkanlıklar','Alışkanlık ekle']].map(([k,title,add])=>{
+    const hs=S.habits.filter(h=>h.kind===k);
+    return `<div class="grp-h"><h4>${title}${hs.length?`<span>${hs.filter(h=>done(h,sel)).length}/${hs.length}</span>`:''}</h4><button type="button" class="addlink" data-add="${k}">+ ${add}</button></div>`+
+      (hs.length?hs.map(card).join(''):`<button type="button" class="empty-add" data-add="${k}">Henüz ${k==='ders'?'ders':'alışkanlık'} yok · <b>hazır listeden seç</b></button>`);
+  }).join('');
+}
+function renderStats(){
+  if(!S.habits.length){stats.innerHTML='<div class="empty">İstatistik için önce alışkanlık ekle.</div>';return}
+  const t=today(),bars=[],labs=[];
+  for(let i=13;i>=0;i--){const k=key(addDays(t,-i));bars.push(S.habits.filter(h=>done(h,k)).length);labs.push(addDays(t,-i).getDate())}
+  const mx=Math.max(S.habits.length,1);
+  let html=`<div class="stat"><h3>Son 14 gün</h3><p>Her gün tamamlanan alışkanlık sayısı</p>
+    <div class="bars">${bars.map(b=>`<div style="height:${b/mx*100}%" title="${b}"></div>`).join('')}</div>
+    <div class="barlab">${labs.map(l=>`<span>${l}</span>`).join('')}</div></div>`;
+  for(const h of S.habits){
+    let best=0,run=0,doneDays=0,total=0,d=new Date(h.created+'T00:00');
+    while(d<=t){const k=key(d);if(done(h,k)){run++;best=Math.max(best,run);doneDays++}else if(k!==key(t))run=0;d=addDays(d,1)}
+    for(const k in h.log)total+=h.log[k];
+    let last30=0;for(let i=0;i<30;i++){const k=key(addDays(t,-i));if(k>=h.created&&done(h,k))last30++}
+    const span=Math.min(30,Math.round((t-new Date(h.created+'T00:00'))/864e5)+1);
+    const tot=h.type==='timer'?fmtMin(total/60):h.type==='count'?total+' kez':doneDays+' gün';
+    html+=`<div class="stat"><h3><span>${esc(h.emoji)}</span>${esc(h.name)}</h3><div class="nums">
+      <div><b>${run}</b><small>Seri</small></div><div><b>${best}</b><small>En iyi</small></div>
+      <div><b>%${Math.round(last30/span*100)}</b><small>Son 30 gün</small></div><div><b style="font-size:15px;padding-top:3px">${tot}</b><small>Toplam</small></div></div></div>`;
+  }
+  stats.innerHTML=html;
+}
+function render(){
+  banner.hidden=!S.example;
+  if(view==='vToday'){renderWeek();renderList();renderPrayer();if(S.pomo)renderPomo();startGlobe()}
+  if(view==='vStats')renderStats();
+  if(view==='vRes')renderRes();
+  if(view==='vSettings'){exportBox.value=JSON.stringify(S);if(S.pomo)syncPomoSettings()}
+}
+function touch(){S.example=false;save();render()}
+
+week.addEventListener('click',e=>{const b=e.target.closest('.day');if(!b||b.disabled)return;sel=b.dataset.k;render()});
+/* swipe left to delete, with undo */
+let sw=null,noClickUntil=0,undoBuf=null;
+list.addEventListener('pointerdown',e=>{const w=e.target.closest('.sw');if(!w||e.button>0)return;sw={w,c:w.querySelector('.card'),x:e.clientX,y:e.clientY,dx:0,on:false,id:e.pointerId};armDrag(e,w)});
+/* long-press a card, then drag it onto the Pomodoro to assign it */
+let dg=null,pressT=null,scrollRaf=0;
+function armDrag(e,w){
+  clearTimeout(pressT);const x0=e.clientX,y0=e.clientY,id=e.pointerId,c=w.querySelector('.card');
+  c.classList.add('pressing');
+  const cancel=ev=>{if(ev.pointerId!==id)return;if(Math.hypot(ev.clientX-x0,ev.clientY-y0)>8||ev.type!=='pointermove'){clearTimeout(pressT);c.classList.remove('pressing');removeEventListener('pointermove',cancel);removeEventListener('pointerup',cancel);removeEventListener('pointercancel',cancel)}};
+  addEventListener('pointermove',cancel);addEventListener('pointerup',cancel);addEventListener('pointercancel',cancel);
+  pressT=setTimeout(()=>{removeEventListener('pointermove',cancel);removeEventListener('pointerup',cancel);removeEventListener('pointercancel',cancel);c.classList.remove('pressing');startDrag(w,c,x0,y0,id)},380);
+}
+function startDrag(w,c,x,y,id){
+  sw=null;const r=c.getBoundingClientRect();
+  const g=c.cloneNode(true);g.classList.add('ghost-card');g.style.width=r.width+'px';g.style.left=r.left+'px';g.style.top=r.top+'px';document.body.appendChild(g);
+  dg={w,g,id,ox:x-r.left,oy:y-r.top,x,y,habit:w.dataset.id};w.classList.add('lifting');
+  dropBar.hidden=false;pomo.classList.add('ready');noClickUntil=performance.now()+1e6;
+  try{navigator.vibrate&&navigator.vibrate(18)}catch(_){}
+  const loop=()=>{if(!dg)return;if(dg.y<90)scrollBy(0,-Math.ceil((90-dg.y)/6));else if(dg.y>innerHeight-110)scrollBy(0,Math.ceil((dg.y-innerHeight+110)/6));scrollRaf=requestAnimationFrame(loop)};scrollRaf=requestAnimationFrame(loop);
+}
+const overEl=(el,x,y)=>{if(!el||el.hidden)return false;const r=el.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom};
+addEventListener('pointermove',e=>{if(!dg||e.pointerId!==dg.id)return;e.preventDefault();dg.x=e.clientX;dg.y=e.clientY;
+  dg.g.style.left=(e.clientX-dg.ox)+'px';dg.g.style.top=(e.clientY-dg.oy)+'px';
+  const nx=overEl(pNextBox,e.clientX,e.clientY);
+  const hot=!nx&&(overEl(dropBar,e.clientX,e.clientY)||overEl(pomo,e.clientX,e.clientY));
+  dropBar.classList.toggle('hot',hot);pomo.classList.toggle('hot',hot);pNextBox.classList.toggle('hot',nx);dg.nx=nx;dg.g.style.transform=(hot||nx)?'scale(.8) rotate(0)':'';dg.g.style.transform=hot?'scale(.8) rotate(0)':''},{passive:false});
+document.addEventListener('touchmove',e=>{if(dg)e.preventDefault()},{passive:false});
+function endCardDrag(e){
+  if(!dg||(e&&e.pointerId!==dg.id))return;const d=dg;dg=null;cancelAnimationFrame(scrollRaf);
+  const hot=pomo.classList.contains('hot'),nx=pNextBox.classList.contains('hot');
+  d.g.remove();d.w.classList.remove('lifting');dropBar.hidden=true;dropBar.classList.remove('hot');pomo.classList.remove('hot','ready');pNextBox.classList.remove('hot');
+  noClickUntil=performance.now()+350;
+  if(nx)setNext(d.habit);else if(hot)assignToPomo(d.habit);
+}
+addEventListener('pointerup',endCardDrag);addEventListener('pointercancel',endCardDrag);
+function setNext(id){
+  const p=P(),h=S.habits.find(x=>x.id===id);if(!h)return;
+  if(p.habitId===id){toast(`${h.name} zaten şu an Pomodoro'da`);return}
+  p.nextId=id;save();renderPomo();renderList();
+  pNextBox.classList.remove('flash');void pNextBox.offsetWidth;pNextBox.classList.add('flash');
+  toast(`${h.emoji} ${h.name} sıradaki ders oldu`);
+  try{navigator.vibrate&&navigator.vibrate([10,40,10])}catch(_){}
+}
+function assignToPomo(id){
+  const p=P(),h=S.habits.find(x=>x.id===id);if(!h)return;
+  if(p.habitId===id){toast(`${h.name} zaten Pomodoro'da`);return}
+  if(p.running&&p.mode==='focus'){const old=pomoCredit((p.startLeft||p.len.focus*60)-pomoLeft());p.startLeft=pomoLeft();if(old)toast(`+ süre ${old.name}`)}
+  p.habitId=id;if(p.nextId===id)p.nextId=null;save();renderPomo();renderList();
+  pomo.classList.remove('flash');void pomo.offsetWidth;pomo.classList.add('flash');
+  pomo.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+  toast(`${h.emoji} ${h.name} Pomodoro'ya atandı`);
+  try{navigator.vibrate&&navigator.vibrate([10,40,10])}catch(_){}
+}
+addEventListener('pointermove',e=>{
+  if(!sw||e.pointerId!==sw.id)return;
+  const dx=e.clientX-sw.x,dy=e.clientY-sw.y;
+  if(!sw.on){
+    if(dx<-10&&Math.abs(dx)>Math.abs(dy)*1.3){sw.on=true;sw.c.style.transition='none';try{sw.w.setPointerCapture(e.pointerId)}catch(_){}}
+    else if(Math.abs(dy)>10||dx>10){sw=null;return}else return;
+  }
+  e.preventDefault();
+  sw.dx=Math.min(0,dx);sw.c.style.transform=`translateX(${sw.dx}px)`;
+  sw.w.classList.toggle('arm',-sw.dx>sw.w.offsetWidth*.35);
+},{passive:false});
+function endSwipe(){
+  if(!sw)return;const s0=sw;sw=null;if(!s0.on)return;
+  noClickUntil=performance.now()+350;s0.c.style.transition='';
+  if(s0.w.classList.contains('arm'))swipeDelete(s0.w,s0.c);else{s0.c.style.transform='';s0.w.classList.remove('arm')}
+}
+addEventListener('pointerup',endSwipe);addEventListener('pointercancel',endSwipe);
+function swipeDelete(w,c){
+  const id=w.dataset.id,idx=S.habits.findIndex(h=>h.id===id);if(idx<0)return;
+  c.style.transform='translateX(-110%)';
+  setTimeout(()=>{w.style.height=w.offsetHeight+'px';w.offsetHeight;w.classList.add('gone');w.style.height='0px';w.style.marginBottom='-10px';w.style.opacity='0'},180);
+  setTimeout(()=>{
+    const h=S.habits[idx];undoBuf={h,idx,timer:S.timer&&S.timer.id===id?S.timer:null};
+    if(S.timer&&S.timer.id===id)S.timer=null;
+    S.habits.splice(idx,1);touch();
+    toast(`“${h.name}” silindi`,()=>{if(!undoBuf)return;S.habits.splice(Math.min(undoBuf.idx,S.habits.length),0,undoBuf.h);if(undoBuf.timer)S.timer=undoBuf.timer;undoBuf=null;touch();toast('Geri alındı')});
+  },420);
+}
+list.addEventListener('click',e=>{
+  if(performance.now()<noClickUntil)return;
+  const a=e.target.closest('[data-act]'),m=e.target.closest('[data-minus]'),ed=e.target.closest('[data-edit]');
+  const ak=e.target.closest('[data-add]');if(ak)return openSheet(null,ak.dataset.add);
+  if(ed)return openSheet(S.habits.find(h=>h.id===ed.dataset.edit));
+  const id=a?a.dataset.act:m?m.dataset.minus:null,h=S.habits.find(x=>x.id===id);if(!h)return;
+  if(m){h.log[sel]=Math.max(0,(h.log[sel]||0)-1);if(!h.log[sel])delete h.log[sel];return touch()}
+  if(h.type==='check'){if(h.log[sel])delete h.log[sel];else h.log[sel]=1}
+  else if(h.type==='count'){h.log[sel]=(h.log[sel]||0)+1}
+  else{if(S.timer&&S.timer.id===h.id)stopTimer();else{if(S.timer)stopTimer();S.timer={id:h.id,start:Date.now(),date:sel}}}
+  touch();
+});
+function stopTimer(){const t=S.timer,h=S.habits.find(x=>x.id===t.id);if(h)h.log[t.date]=(h.log[t.date]||0)+Math.floor((Date.now()-t.start)/1000);S.timer=null}
+
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
+  view=b.dataset.v;document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-current',x===b));
+  ['vToday','vRes','vStats','vSettings'].forEach(v=>document.getElementById(v).hidden=v!==view);render();scrollTo(0,0);
+});
+
+/* habit sheet */
+const PRESETS={
+  ders:[['Kur\'an','📖','timer',30],['Arapça','🔤','timer',45],['Tecvid','🎙️','timer',20],['Fıkıh','⚖️','timer',30],['Hadis','📜','timer',30],['Tefsir','📘','timer',30],['Siyer','🕌','timer',20],['Akaid','💡','timer',20],['Ezber','🧠','timer',15],['İngilizce','🌍','timer',30],['Matematik','➗','timer',45],['Kitap okuma','📚','timer',30]],
+  aliskanlik:[['Beş vakit namaz','🕌','count',5],['Günlük 1 sayfa Kur\'an','📖','check',1],['Tesbihat','📿','count',5],['Dua','🤲','check',1],['Su içmek','💧','count',8],['Diş fırçalama','🪥','count',2],['Yürüyüş','🚶','timer',30],['Spor','🏃','timer',20],['Erken kalkmak','🌅','check',1],['Erken yatmak','🌙','check',1],['Ekransız saat','📵','timer',60],['Sağlıklı beslenme','🥗','check',1]]
+};
+const KINDS={ders:'Ders',aliskanlik:'Alışkanlık'};
+let editing=null,fT='check',fCol=COLORS[0],fK='aliskanlik';
+function presetSub(p){return p[2]==='timer'?`Günde ${fmtMin(p[3])}`:p[2]==='count'?`Günde ${p[3]} kez`:'Günde bir kez'}
+function renderPresets(){
+  presets.innerHTML=PRESETS[fK].map((p,i)=>{const has=S.habits.some(h=>h.name===p[0]);
+    return `<button type="button" class="pre${has?' has':''}" data-p="${i}" ${has?'aria-disabled="true"':''}><span class="pe">${p[1]}</span><span class="pt"><b>${esc(p[0])}</b><small>${has?'Eklendi':presetSub(p)}</small></span><span class="pp">${has?'✓':'+'}</span></button>`}).join('');
+}
+presets.onclick=e=>{
+  const b=e.target.closest('[data-p]');if(!b||b.classList.contains('has'))return;
+  const p=PRESETS[fK][+b.dataset.p];
+  S.habits.push({id:uid(),kind:fK,name:p[0],emoji:p[1],type:p[2],goal:p[3],color:COLORS[S.habits.length%COLORS.length],created:key(today()),log:{}});
+  touch();renderPresets();toast(`“${p[0]}” eklendi`);
+};
+fKind.onclick=e=>{const b=e.target.closest('button');if(!b)return;fK=b.dataset.k;syncForm();if(!editing)renderPresets()};
+const HELP={check:'Günde bir kez dokunup işaretlersin.',count:'Her dokunuşta bir artar, hedefe ulaşınca tamamlanır.',timer:'Başlat/durdur ile süre tutarsın.'};
+function hsl2hex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return'#'+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('').toUpperCase()}
+// 12 soft hues × 3 tones (light, mid, deep) — muted so they stay easy on the eyes on the dark background
+const HUES=[145,170,190,210,232,262,295,335,12,30,48,80];
+const PALETTE=[[34,76],[32,64],[28,52]].flatMap(([sat,l])=>HUES.map(h=>hsl2hex(h,sat,l)));
+fColor.innerHTML=PALETTE.map(c=>`<button type="button" data-col="${c}" style="background:${c}" aria-label="Renk ${c}"></button>`).join('');
+fCustom.oninput=()=>{fCol=fCustom.value.toUpperCase();syncForm()};
+function syncForm(){
+  fKind.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===fK));
+  fName.placeholder=fK==='ders'?'Örn. Usûl-i Fıkıh':'Örn. Sabah zikri';
+  customTitle.textContent=fK==='ders'?'Kendi dersini oluştur':'Kendi alışkanlığını oluştur';
+  fType.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===fT));
+  fColor.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.col.toUpperCase()===String(fCol).toUpperCase()));
+  cBar.style.setProperty('--pc',fCol);cHex.textContent=String(fCol).toUpperCase();try{fCustom.value=fCol.toLowerCase()}catch(e){}
+  goalWrap.hidden=fT==='check';typeHelp.textContent=HELP[fT];
+  goalLbl.textContent=fT==='timer'?'Günlük hedef (dakika)':'Günlük hedef (kaç kez)';
+}
+function openSheet(h,kind){
+  editing=h||null;fK=h?h.kind:(kind||fK);
+  sheetTitle.textContent=h?`${KINDS[fK]} düzenle`:'Ekle';
+  fT=h?h.type:(fK==='ders'?'timer':'check');
+  fName.value=h?h.name:'';fEmoji.value=h?h.emoji:(fK==='ders'?'📘':'⭐');fGoal.value=h?h.goal:(fT==='timer'?30:2);
+  fCol=h?h.color:COLORS[S.habits.length%COLORS.length];
+  presetWrap.hidden=!!h;if(!h)renderPresets();customTitle.hidden=!!h;
+  editRow.hidden=!h;doneBtn.hidden=!!h;delBtn.textContent='Sil';delBtn.dataset.armed='';
+  syncForm();scrim.hidden=sheet.hidden=false;sheet.scrollTop=0;
+}
+function closeSheets(){scrim.hidden=sheet.hidden=citySheet.hidden=qiblaSheet.hidden=true;stopLiveCompass()}
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
+addEventListener('keydown',e=>{if(e.key==='Escape'&&(!sheet.hidden||!citySheet.hidden||!qiblaSheet.hidden))closeSheets()});
+doneBtn.onclick=closeSheets;scrim.onclick=closeSheets;cancelBtn.onclick=closeSheets;
+fType.onclick=e=>{const b=e.target.closest('button');if(!b)return;fT=b.dataset.t;if(fT==='timer'&&+fGoal.value<5)fGoal.value=30;if(fT==='count'&&+fGoal.value>50)fGoal.value=2;syncForm()};
+fColor.onclick=e=>{const b=e.target.closest('button');if(b){fCol=b.dataset.col;syncForm()}};
+form.onsubmit=e=>{
+  e.preventDefault();const name=fName.value.trim();if(!name)return;
+  const data={kind:fK,name,emoji:fEmoji.value.trim()||'⭐',type:fT,goal:fT==='check'?1:Math.max(1,parseInt(fGoal.value)||1),color:fCol};
+  if(editing)Object.assign(editing,data);else S.habits.push({id:uid(),created:key(today()),log:{},...data});
+  closeSheets();toast(editing?'Kaydedildi':'Eklendi');touch();
+};
+delBtn.onclick=()=>{
+  if(!delBtn.dataset.armed){delBtn.dataset.armed='1';delBtn.textContent='Silmek için tekrar dokun';return}
+  if(S.timer&&S.timer.id===editing.id)S.timer=null;
+  S.habits=S.habits.filter(h=>h!==editing);closeSheets();toast('Silindi');touch();
+};
+copyBtn.onclick=()=>{navigator.clipboard.writeText(exportBox.value).then(()=>toast('Kopyalandı')).catch(()=>{exportBox.focus();exportBox.select();toast('Metin seçildi, elle kopyala')})};
+importBtn.onclick=()=>{try{const d=JSON.parse(importBox.value);if(!Array.isArray(d.habits))throw 0;S=d;S.example=false;if(!S.city)S.city='İstanbul';pomoInit();save();importBox.value='';toast('İçe aktarıldı');render()}catch(e){toast('Bu metin geçerli bir yedek değil')}};
+resetBtn.onclick=()=>{
+  if(!resetBtn.dataset.armed){resetBtn.dataset.armed='1';resetBtn.textContent='Emin misin? Tekrar dokun';return}
+  S={habits:[],timer:null,example:false,city:S.city};save();resetBtn.dataset.armed='';resetBtn.textContent='Tüm alışkanlıkları sil';toast('Silindi');render();
+};
+let tt;function toast(m,undo){const el=document.getElementById('toast');el.textContent=m;
+  if(undo){const b=document.createElement('button');b.type='button';b.textContent='Geri al';b.onclick=()=>{el.hidden=true;undo()};el.appendChild(b)}
+  el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,undo?4500:1800)}
+
+/* ---------- cities ---------- */
+const CITIES=[
+ ['Adana','Türkiye',37.0,35.32,'Europe/Istanbul'],
+ ['Adıyaman','Türkiye',37.76,38.28,'Europe/Istanbul'],
+ ['Afyonkarahisar','Türkiye',38.76,30.54,'Europe/Istanbul'],
+ ['Ağrı','Türkiye',39.72,43.05,'Europe/Istanbul'],
+ ['Aksaray','Türkiye',38.37,34.03,'Europe/Istanbul'],
+ ['Amasya','Türkiye',40.65,35.83,'Europe/Istanbul'],
+ ['Ankara','Türkiye',39.93,32.86,'Europe/Istanbul'],
+ ['Antalya','Türkiye',36.9,30.7,'Europe/Istanbul'],
+ ['Ardahan','Türkiye',41.11,42.7,'Europe/Istanbul'],
+ ['Artvin','Türkiye',41.18,41.82,'Europe/Istanbul'],
+ ['Aydın','Türkiye',37.85,27.85,'Europe/Istanbul'],
+ ['Balıkesir','Türkiye',39.65,27.88,'Europe/Istanbul'],
+ ['Bartın','Türkiye',41.64,32.34,'Europe/Istanbul'],
+ ['Batman','Türkiye',37.88,41.13,'Europe/Istanbul'],
+ ['Bayburt','Türkiye',40.26,40.23,'Europe/Istanbul'],
+ ['Bilecik','Türkiye',40.14,29.98,'Europe/Istanbul'],
+ ['Bingöl','Türkiye',38.88,40.5,'Europe/Istanbul'],
+ ['Bitlis','Türkiye',38.4,42.11,'Europe/Istanbul'],
+ ['Bolu','Türkiye',40.74,31.61,'Europe/Istanbul'],
+ ['Burdur','Türkiye',37.72,30.29,'Europe/Istanbul'],
+ ['Bursa','Türkiye',40.19,29.06,'Europe/Istanbul'],
+ ['Çanakkale','Türkiye',40.15,26.41,'Europe/Istanbul'],
+ ['Çankırı','Türkiye',40.6,33.62,'Europe/Istanbul'],
+ ['Çorum','Türkiye',40.55,34.95,'Europe/Istanbul'],
+ ['Denizli','Türkiye',37.78,29.09,'Europe/Istanbul'],
+ ['Diyarbakır','Türkiye',37.91,40.23,'Europe/Istanbul'],
+ ['Düzce','Türkiye',40.84,31.16,'Europe/Istanbul'],
+ ['Edirne','Türkiye',41.68,26.56,'Europe/Istanbul'],
+ ['Elazığ','Türkiye',38.67,39.22,'Europe/Istanbul'],
+ ['Erzincan','Türkiye',39.75,39.49,'Europe/Istanbul'],
+ ['Erzurum','Türkiye',39.9,41.27,'Europe/Istanbul'],
+ ['Eskişehir','Türkiye',39.78,30.52,'Europe/Istanbul'],
+ ['Gaziantep','Türkiye',37.07,37.38,'Europe/Istanbul'],
+ ['Giresun','Türkiye',40.91,38.39,'Europe/Istanbul'],
+ ['Gümüşhane','Türkiye',40.46,39.48,'Europe/Istanbul'],
+ ['Hakkari','Türkiye',37.58,43.74,'Europe/Istanbul'],
+ ['Hatay','Türkiye',36.2,36.16,'Europe/Istanbul'],
+ ['Iğdır','Türkiye',39.92,44.05,'Europe/Istanbul'],
+ ['Isparta','Türkiye',37.76,30.55,'Europe/Istanbul'],
+ ['İstanbul','Türkiye',41.01,28.98,'Europe/Istanbul'],
+ ['İzmir','Türkiye',38.42,27.14,'Europe/Istanbul'],
+ ['Kahramanmaraş','Türkiye',37.58,36.94,'Europe/Istanbul'],
+ ['Karabük','Türkiye',41.2,32.63,'Europe/Istanbul'],
+ ['Karaman','Türkiye',37.18,33.22,'Europe/Istanbul'],
+ ['Kars','Türkiye',40.6,43.1,'Europe/Istanbul'],
+ ['Kastamonu','Türkiye',41.38,33.78,'Europe/Istanbul'],
+ ['Kayseri','Türkiye',38.73,35.48,'Europe/Istanbul'],
+ ['Kilis','Türkiye',36.72,37.12,'Europe/Istanbul'],
+ ['Kırıkkale','Türkiye',39.85,33.51,'Europe/Istanbul'],
+ ['Kırklareli','Türkiye',41.73,27.22,'Europe/Istanbul'],
+ ['Kırşehir','Türkiye',39.15,34.16,'Europe/Istanbul'],
+ ['Kocaeli','Türkiye',40.77,29.92,'Europe/Istanbul'],
+ ['Konya','Türkiye',37.87,32.48,'Europe/Istanbul'],
+ ['Kütahya','Türkiye',39.42,29.98,'Europe/Istanbul'],
+ ['Malatya','Türkiye',38.35,38.31,'Europe/Istanbul'],
+ ['Manisa','Türkiye',38.61,27.43,'Europe/Istanbul'],
+ ['Mardin','Türkiye',37.31,40.74,'Europe/Istanbul'],
+ ['Mersin','Türkiye',36.81,34.64,'Europe/Istanbul'],
+ ['Muğla','Türkiye',37.22,28.36,'Europe/Istanbul'],
+ ['Muş','Türkiye',38.75,41.49,'Europe/Istanbul'],
+ ['Nevşehir','Türkiye',38.62,34.71,'Europe/Istanbul'],
+ ['Niğde','Türkiye',37.97,34.68,'Europe/Istanbul'],
+ ['Ordu','Türkiye',40.98,37.88,'Europe/Istanbul'],
+ ['Osmaniye','Türkiye',37.07,36.25,'Europe/Istanbul'],
+ ['Rize','Türkiye',41.03,40.52,'Europe/Istanbul'],
+ ['Sakarya','Türkiye',40.69,30.44,'Europe/Istanbul'],
+ ['Samsun','Türkiye',41.29,36.33,'Europe/Istanbul'],
+ ['Şanlıurfa','Türkiye',37.16,38.79,'Europe/Istanbul'],
+ ['Siirt','Türkiye',37.93,41.94,'Europe/Istanbul'],
+ ['Sinop','Türkiye',42.03,35.15,'Europe/Istanbul'],
+ ['Şırnak','Türkiye',37.52,42.46,'Europe/Istanbul'],
+ ['Sivas','Türkiye',39.75,37.02,'Europe/Istanbul'],
+ ['Tekirdağ','Türkiye',40.98,27.51,'Europe/Istanbul'],
+ ['Tokat','Türkiye',40.31,36.55,'Europe/Istanbul'],
+ ['Trabzon','Türkiye',41.0,39.72,'Europe/Istanbul'],
+ ['Tunceli','Türkiye',39.11,39.55,'Europe/Istanbul'],
+ ['Uşak','Türkiye',38.68,29.41,'Europe/Istanbul'],
+ ['Van','Türkiye',38.49,43.38,'Europe/Istanbul'],
+ ['Yalova','Türkiye',40.66,29.27,'Europe/Istanbul'],
+ ['Yozgat','Türkiye',39.82,34.81,'Europe/Istanbul'],
+ ['Zonguldak','Türkiye',41.45,31.79,'Europe/Istanbul'],
+ ['Edremit','Türkiye',39.6,27.02,'Europe/Istanbul'],
+ ['Ayvalık','Türkiye',39.32,26.69,'Europe/Istanbul'],
+ ['Alanya','Türkiye',36.54,32.0,'Europe/Istanbul'],
+ ['Bodrum','Türkiye',37.04,27.43,'Europe/Istanbul'],
+ ['Lefkoşa','KKTC',35.19,33.36,'Asia/Nicosia'],
+ ['Girne','KKTC',35.34,33.32,'Asia/Nicosia'],
+ ['Gazimağusa','KKTC',35.12,33.94,'Asia/Nicosia'],
+ ['Mekke','Suudi Arabistan',21.42,39.83,'Asia/Riyadh'],
+ ['Medine','Suudi Arabistan',24.47,39.61,'Asia/Riyadh'],
+ ['Riyad','Suudi Arabistan',24.71,46.68,'Asia/Riyadh'],
+ ['Cidde','Suudi Arabistan',21.49,39.19,'Asia/Riyadh'],
+ ['Kudüs','Filistin',31.78,35.23,'Asia/Jerusalem'],
+ ['Gazze','Filistin',31.5,34.47,'Asia/Jerusalem'],
+ ['Amman','Ürdün',31.95,35.93,'Asia/Amman'],
+ ['Beyrut','Lübnan',33.89,35.5,'Asia/Beirut'],
+ ['Şam','Suriye',33.51,36.29,'Asia/Damascus'],
+ ['Halep','Suriye',36.2,37.16,'Asia/Damascus'],
+ ['Bağdat','Irak',33.31,44.37,'Asia/Baghdad'],
+ ['Erbil','Irak',36.19,44.01,'Asia/Baghdad'],
+ ['Kerkük','Irak',35.47,44.39,'Asia/Baghdad'],
+ ['Musul','Irak',36.34,43.13,'Asia/Baghdad'],
+ ['Tahran','İran',35.69,51.39,'Asia/Tehran'],
+ ['Tebriz','İran',38.08,46.29,'Asia/Tehran'],
+ ['Meşhed','İran',36.3,59.61,'Asia/Tehran'],
+ ['Dubai','Birleşik Arap Emirlikleri',25.2,55.27,'Asia/Dubai'],
+ ['Abu Dabi','Birleşik Arap Emirlikleri',24.45,54.38,'Asia/Dubai'],
+ ['Doha','Katar',25.29,51.53,'Asia/Qatar'],
+ ['Kuveyt','Kuveyt',29.38,47.99,'Asia/Kuwait'],
+ ['Kahire','Mısır',30.04,31.24,'Africa/Cairo'],
+ ['İskenderiye','Mısır',31.2,29.92,'Africa/Cairo'],
+ ['Kazablanka','Fas',33.57,-7.59,'Africa/Casablanca'],
+ ['Rabat','Fas',34.02,-6.84,'Africa/Casablanca'],
+ ['Fes','Fas',34.03,-5.0,'Africa/Casablanca'],
+ ['Tunus','Tunus',36.81,10.18,'Africa/Tunis'],
+ ['Cezayir','Cezayir',36.75,3.06,'Africa/Algiers'],
+ ['Trablus','Libya',32.89,13.19,'Africa/Tripoli'],
+ ['Hartum','Sudan',15.5,32.56,'Africa/Khartoum'],
+ ['Mogadişu','Somali',2.05,45.32,'Africa/Mogadishu'],
+ ['Addis Ababa','Etiyopya',9.03,38.74,'Africa/Addis_Ababa'],
+ ['Nairobi','Kenya',-1.29,36.82,'Africa/Nairobi'],
+ ['Lagos','Nijerya',6.52,3.38,'Africa/Lagos'],
+ ['Abuja','Nijerya',9.08,7.4,'Africa/Lagos'],
+ ['Kano','Nijerya',12.0,8.52,'Africa/Lagos'],
+ ['Dakar','Senegal',14.72,-17.47,'Africa/Dakar'],
+ ['Johannesburg','Güney Afrika',-26.2,28.05,'Africa/Johannesburg'],
+ ['Cape Town','Güney Afrika',-33.92,18.42,'Africa/Johannesburg'],
+ ['Bakü','Azerbaycan',40.41,49.87,'Asia/Baku'],
+ ['Gence','Azerbaycan',40.68,46.36,'Asia/Baku'],
+ ['Nahçıvan','Azerbaycan',39.21,45.41,'Asia/Baku'],
+ ['Tiflis','Gürcistan',41.72,44.79,'Asia/Tbilisi'],
+ ['Batum','Gürcistan',41.64,41.64,'Asia/Tbilisi'],
+ ['Taşkent','Özbekistan',41.3,69.24,'Asia/Tashkent'],
+ ['Semerkant','Özbekistan',39.65,66.96,'Asia/Tashkent'],
+ ['Buhara','Özbekistan',39.77,64.42,'Asia/Tashkent'],
+ ['Almatı','Kazakistan',43.24,76.89,'Asia/Almaty'],
+ ['Astana','Kazakistan',51.17,71.45,'Asia/Almaty'],
+ ['Türkistan','Kazakistan',43.3,68.25,'Asia/Almaty'],
+ ['Bişkek','Kırgızistan',42.87,74.59,'Asia/Bishkek'],
+ ['Aşkabat','Türkmenistan',37.96,58.33,'Asia/Ashgabat'],
+ ['Moskova','Rusya',55.76,37.62,'Europe/Moscow'],
+ ['Kazan','Rusya',55.79,49.12,'Europe/Moscow'],
+ ['Grozni','Rusya',43.32,45.69,'Europe/Moscow'],
+ ['Kabil','Afganistan',34.56,69.21,'Asia/Kabul'],
+ ['Karaçi','Pakistan',24.86,67.01,'Asia/Karachi'],
+ ['Lahor','Pakistan',31.55,74.34,'Asia/Karachi'],
+ ['İslamabad','Pakistan',33.68,73.05,'Asia/Karachi'],
+ ['Yeni Delhi','Hindistan',28.61,77.21,'Asia/Kolkata'],
+ ['Mumbai','Hindistan',19.08,72.88,'Asia/Kolkata'],
+ ['Haydarabad','Hindistan',17.39,78.49,'Asia/Kolkata'],
+ ['Dakka','Bangladeş',23.81,90.41,'Asia/Dhaka'],
+ ['Kuala Lumpur','Malezya',3.14,101.69,'Asia/Kuala_Lumpur'],
+ ['Cakarta','Endonezya',-6.21,106.85,'Asia/Jakarta'],
+ ['Bandung','Endonezya',-6.91,107.61,'Asia/Jakarta'],
+ ['Surabaya','Endonezya',-7.25,112.75,'Asia/Jakarta'],
+ ['Singapur','Singapur',1.35,103.82,'Asia/Singapore'],
+ ['Pekin','Çin',39.9,116.41,'Asia/Shanghai'],
+ ['Şanghay','Çin',31.23,121.47,'Asia/Shanghai'],
+ ['Urumçi','Çin',43.83,87.62,'Asia/Shanghai'],
+ ['Tokyo','Japonya',35.68,139.69,'Asia/Tokyo'],
+ ['Seul','Güney Kore',37.57,126.98,'Asia/Seoul'],
+ ['Berlin','Almanya',52.52,13.4,'Europe/Berlin'],
+ ['Köln','Almanya',50.94,6.96,'Europe/Berlin'],
+ ['Frankfurt','Almanya',50.11,8.68,'Europe/Berlin'],
+ ['Münih','Almanya',48.14,11.58,'Europe/Berlin'],
+ ['Hamburg','Almanya',53.55,9.99,'Europe/Berlin'],
+ ['Stuttgart','Almanya',48.78,9.18,'Europe/Berlin'],
+ ['Düsseldorf','Almanya',51.23,6.77,'Europe/Berlin'],
+ ['Duisburg','Almanya',51.43,6.76,'Europe/Berlin'],
+ ['Amsterdam','Hollanda',52.37,4.9,'Europe/Amsterdam'],
+ ['Rotterdam','Hollanda',51.92,4.48,'Europe/Amsterdam'],
+ ['Lahey','Hollanda',52.08,4.3,'Europe/Amsterdam'],
+ ['Brüksel','Belçika',50.85,4.35,'Europe/Brussels'],
+ ['Anvers','Belçika',51.22,4.4,'Europe/Brussels'],
+ ['Paris','Fransa',48.86,2.35,'Europe/Paris'],
+ ['Lyon','Fransa',45.76,4.84,'Europe/Paris'],
+ ['Strazburg','Fransa',48.57,7.75,'Europe/Paris'],
+ ['Marsilya','Fransa',43.3,5.37,'Europe/Paris'],
+ ['Viyana','Avusturya',48.21,16.37,'Europe/Vienna'],
+ ['Zürih','İsviçre',47.38,8.54,'Europe/Zurich'],
+ ['Cenevre','İsviçre',46.2,6.14,'Europe/Zurich'],
+ ['Londra','Birleşik Krallık',51.51,-0.13,'Europe/London'],
+ ['Manchester','Birleşik Krallık',53.48,-2.24,'Europe/London'],
+ ['Birmingham','Birleşik Krallık',52.49,-1.89,'Europe/London'],
+ ['Stockholm','İsveç',59.33,18.07,'Europe/Stockholm'],
+ ['Kopenhag','Danimarka',55.68,12.57,'Europe/Copenhagen'],
+ ['Oslo','Norveç',59.91,10.75,'Europe/Oslo'],
+ ['Roma','İtalya',41.9,12.5,'Europe/Rome'],
+ ['Milano','İtalya',45.46,9.19,'Europe/Rome'],
+ ['Madrid','İspanya',40.42,-3.7,'Europe/Madrid'],
+ ['Barselona','İspanya',41.39,2.17,'Europe/Madrid'],
+ ['Saraybosna','Bosna-Hersek',43.86,18.41,'Europe/Sarajevo'],
+ ['Priştine','Kosova',42.66,21.17,'Europe/Belgrade'],
+ ['Prizren','Kosova',42.21,20.74,'Europe/Belgrade'],
+ ['Üsküp','Kuzey Makedonya',42.0,21.43,'Europe/Skopje'],
+ ['Tiran','Arnavutluk',41.33,19.82,'Europe/Tirane'],
+ ['Sofya','Bulgaristan',42.7,23.32,'Europe/Sofia'],
+ ['Kırcaali','Bulgaristan',41.65,25.37,'Europe/Sofia'],
+ ['Filibe','Bulgaristan',42.14,24.75,'Europe/Sofia'],
+ ['Atina','Yunanistan',37.98,23.73,'Europe/Athens'],
+ ['Selanik','Yunanistan',40.64,22.94,'Europe/Athens'],
+ ['Gümülcine','Yunanistan',41.12,25.4,'Europe/Athens'],
+ ['New York','ABD',40.71,-74.01,'America/New_York'],
+ ['Washington','ABD',38.91,-77.04,'America/New_York'],
+ ['Chicago','ABD (Merkez)',41.88,-87.63,'America/Chicago'],
+ ['Houston','ABD (Merkez)',29.76,-95.37,'America/Chicago'],
+ ['Los Angeles','ABD (Batı)',34.05,-118.24,'America/Los_Angeles'],
+ ['Toronto','Kanada',43.65,-79.38,'America/Toronto'],
+ ['Montreal','Kanada',45.5,-73.57,'America/Toronto'],
+ ['São Paulo','Brezilya',-23.55,-46.63,'America/Sao_Paulo'],
+ ['Buenos Aires','Arjantin',-34.6,-58.38,'America/Argentina/Buenos_Aires'],
+ ['Sidney','Avustralya',-33.87,151.21,'Australia/Sydney'],
+ ['Melbourne','Avustralya',-37.81,144.96,'Australia/Sydney']
+].map(([name,country,lat,lon,tz])=>({name,country,lat,lon,tz}));
+const LABELS=['Mekke','Kahire','Tahran','Kazablanka','Lagos','Karaçi','Dakka','Cakarta','Londra','New York','Tokyo','Sidney'];
+const city=()=>CITIES.find(c=>c.name===S.city)||CITIES[0];
+function renderCities(){
+  const q=cityQ.value.trim().toLocaleLowerCase('tr');
+  const hits=CITIES.filter(c=>!q||c.name.toLocaleLowerCase('tr').includes(q)||c.country.toLocaleLowerCase('tr').includes(q));
+  if(!hits.length){cityList.innerHTML='<p style="padding:12px;color:var(--muted)">Bu adla bir şehir ya da ülke yok.</p>';return}
+  const groups=new Map();for(const c of hits){if(!groups.has(c.country))groups.set(c.country,[]);groups.get(c.country).push(c)}
+  let html='';
+  for(const [country,list] of groups){
+    if(country==='Türkiye')list.sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+    html+=`<div class="cgrp">${esc(country)}<small>${list.length}</small></div>`+list.map(c=>`<button type="button" data-c="${esc(c.name)}" aria-pressed="${c.name===S.city}"><span>${esc(c.name)}</span><small>${fmtT(Date.now(),c.tz)}</small></button>`).join('');
+  }
+  cityList.innerHTML=html;
+  if(!q){const cur=cityList.querySelector('[aria-pressed="true"]');if(cur)cur.scrollIntoView({block:'center'})}
+}
+function openCities(){cityQ.value='';renderCities();scrim.hidden=citySheet.hidden=false}
+placeBtn.onclick=openCities;cityBtn2.onclick=openCities;cityClose.onclick=closeSheets;cityQ.oninput=renderCities;
+cityList.onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;S.city=b.dataset.c;save();closeSheets();aimAtCity();render();toast(S.city+' seçildi')};
+
+/* ---------- sun & prayer times ---------- */
+const R=Math.PI/180,sin=x=>Math.sin(x*R),cos=x=>Math.cos(x*R),acosd=x=>Math.acos(x)/R,asind=x=>Math.asin(x)/R;
+function sunPos(jd){
+  const D=jd-2451545,g=357.529+0.98560028*D,q=280.459+0.98564736*D,L=q+1.915*sin(g)+0.020*sin(2*g),e=23.439-0.00000036*D;
+  const RA=((Math.atan2(cos(e)*sin(L),cos(L))/R/15)%24+24)%24;
+  let eqt=(((q/15-RA)%24)+24)%24;if(eqt>12)eqt-=24;
+  return{decl:asind(sin(e)*sin(L)),eqt};
+}
+const jdOf=ms=>ms/864e5+2440587.5;
+const NAMES=['İmsak','Güneş','Öğle','İkindi','Akşam','Yatsı'];
+function localYMD(ms,tz){return new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(ms).split('-').map(Number)}
+function prayerTimes(c,y,m,d){
+  const base=Date.UTC(y,m-1,d),sp=sunPos(jdOf(base)+0.5-c.lon/360),dec=sp.decl,phi=c.lat,dh=12-sp.eqt-c.lon/15;
+  const T=alt=>acosd((sin(alt)-sin(phi)*sin(dec))/(cos(phi)*cos(dec)))/15;
+  const asrAlt=Math.atan(1/(1+Math.tan(Math.abs(phi-dec)*R)))/R;
+  let im=dh-T(-18),sr=dh-T(-0.833),as=dh+T(asrAlt),mg=dh+T(-0.833),is=dh+T(-17);
+  const night=24-(mg-sr);if(isNaN(im))im=sr-night*18/60;if(isNaN(is))is=mg+night*17/60;
+  return [im,sr-7/60,dh+5/60,as+4/60,mg+7/60,is].map(h=>base+h*3600e3);
+}
+const fmtT=(ms,tz)=>new Intl.DateTimeFormat('tr-TR',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false}).format(ms);
+function prayerState(now=Date.now()){
+  const c=city(),t=prayerTimes(c,...localYMD(now,c.tz)),tm=prayerTimes(c,...localYMD(now+864e5,c.tz)),ty=prayerTimes(c,...localYMD(now-864e5,c.tz));
+  let cur=-1;for(let i=0;i<6;i++)if(t[i]<=now)cur=i;
+  const next=cur<5?{i:cur+1,t:t[cur+1]}:{i:0,t:tm[0]};
+  // rolling window: starts at the prayer we are in now and runs through the next five (into tomorrow if needed)
+  const all=[{i:5,t:ty[5],day:-1},...t.map((x,i)=>({i,t:x,day:0})),...tm.map((x,i)=>({i,t:x,day:1}))];
+  const start=cur+1; // index in all: yesterday's Yatsı is 0
+  const roll=all.slice(start,start+6);
+  return{c,t,cur,next,roll};
+}
+function renderPrayer(){
+  const p=prayerState(),now=Date.now(),left=Math.max(0,p.next.t-now);
+  const hh=Math.floor(left/3600e3),mm=Math.floor(left%3600e3/60e3),ss=Math.floor(left%60e3/1000);
+  placeName.textContent=p.c.name;
+  let hj='';try{hj=new Intl.DateTimeFormat('tr-TR-u-ca-islamic-umalqura',{timeZone:p.c.tz,day:'numeric',month:'long',year:'numeric'}).format(now).replace(/^Hicri\s*/,'').replace(/\s*(AH|Hicri)$/,'')+' · '}catch(e){}
+  hijri.textContent=hj+new Intl.DateTimeFormat('tr-TR',{timeZone:p.c.tz,day:'numeric',month:'long',weekday:'long'}).format(now);
+  prayer.innerHTML=`<div class="lbl">Sıradaki vakit${p.cur===5?' · yarın':''}</div><h2>${NAMES[p.next.i]} ${fmtT(p.next.t,p.c.tz)}</h2>
+    <div class="cd">${hh?hh+':':''}${pad(mm)}:${pad(ss)}<small>kaldı</small></div>`;
+  tlBox.innerHTML=`<div class="tl" aria-label="Günün vakitleri">
+      <div class="track">${[0,1,2,3,4].map(k=>{const a=p.roll[k].t,b=p.roll[k+1].t,f=now>=b?1:now<=a?0:(now-a)/(b-a);return `<i style="--f:${(f*100).toFixed(1)}%"></i>`}).join('')}</div>
+      <div class="marks">${p.roll.map((x,k)=>`<div class="m ${k===0?'now':k===1?'nx':''}${x.day===1?' tom':''}"><span>${NAMES[x.i]}</span><em></em><b>${fmtT(x.t,p.c.tz)}</b>${x.day===1&&p.roll[k-1].day!==1?'<small>yarın</small>':''}</div>`).join('')}</div>
+    </div>`;
+}
+
+/* ---------- globe ---------- */
+const LAND_B64="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH/4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADf//8AAf///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB////D//////n/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/gf/x////////wAAAAAbgAAB4AAAAAAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAf//8A///////+AAAAB/ngAAAAAAAAAAH8AAAAAAAAAAAAAAAAAAAAAAAAcH3Hv/5////////8AAAAA/gAAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAcIAAQP/AH///////+AAAAAPCAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAADwDAc+f+AP///////4AAAAAAAAAAAAAB4AAAAB/8AAAAAAAAAAAAAAAAAAAAAH9wc374AAAf/////8AAAAAAAAAAAAH4AAAA////AAAB/gAAAAAAAAAAAAAAAAwAAA/QAAAH/////8AAAAAAAAAAAAOAAAAP///wAAAAAAAAAAAAAAAAAAAAP8AYe+c3AAAD/////4AAAAAAAAAAAA4AAAH////++HgAOAAAAAAAAAAAAAAAfv+4+w/4gAAB/////wAAAAAAAAAAADwAHgH///////4AfgAAAAAgHwAAAAAAPf/4O4//9AAB/////wAAAAAAAAAAADwAPb////////4m//gAAAAAAAf+AAAAAA/+A8f//4AB////8gAAAAAAA/gAAAAAfv/////////////8AAAAAB///+H//H/+PeDwf+AA3////AAAAAAA//4AAAA8fv///////////////P8f///////////////////////////////8AAAP/84AYIAAAAAAAAAAAAAAAAAD///////////////////////////////wAAABzAAAAYAAAAAAAAAAAAAAAAABH//////////////////////////////gAAGBwAAAAgAAAAAAAAAAAAAAAAAgP//////////////////////////////ADgB8AAAAAAAAAAAAAAAAAAAAAAAAgEf///////////zw7/AAP/gAAP4AAAB/4/+f//////////////////////8AMAf//////////+DIA/gAH/gAAAAAAAH/z/////////////////////////+AAH///////////8AwgOAAD+AAAAAAAA//H/////////////////////////6AAP///////////wAA/AAAB+AAAAAAAB/+H//////////////////////nP+AAAH//z////////wAA/wAAAOAAAAAAAB//D/////////////////////+A/4AAAA/zAD///////gAA/4wAAAAAAAAAAB//Ab///////////////////+eDgAAAAABwAA///////4AA/94AAAAAAAAAYA5+A///////////////////4AAHAAAAAADcAAD//////4AAf/8AAAAAAAAA8AC+C///////////////////wAAfgAAAAAMAAAA///////wAf/8AAAAAAAAA4AO8H///////////////////AAA/gAAAABgAAAA///////8A///AAAAAAAAA8ANwH//////////////////8AAB/AAAAAEAAAAAf///////z///4AAAAAAAHOAEDv//////////////////+AAA+AAAAAAAAAABH///////x///8AAAAAAAHHAf/////////////////////6AA8AAAAAAAAAAAD///////x///8AAAAAAAGPz//////////////////////6AAwAAAAAAAAAAAD///////9///6AAAAAAAAPj//////////////////////6AAQAAAAAAAAAAAC///////////EAAAAAAAAYf//////////////////////7AAAAAAAAAAAAAABv////////+MNAAAAAAAAD///////////////////////zAAAAAAAAAAAAAAAH////////7gfgAAAAAAAf///////////////////////yAAAAAAAAAAAAAAAL/////////gCgAAAAAAAH///////////////////////iAAAAAAAAAAAAAAAP/////////pAAAAAAAAAD/////uP/x//////////////DAAAAAAAAAAAAAAAP/////////+AAAAAAAAAB//v//Gf/B/////////////+AAAAAAAAAAAAAAAAP////////8wAAAAAAAAAB//H/+AP+P/////////////8CAAAAAAAAAAAAAAAP////////wAAAAAAAAADj/jz/8AD/H/////////////4HgAAAAAAAAAAAAAAP////////gAAAAAAAAAH/4Bw/8AA/B////////////+APAAAAAAAAAAAAAAAP////////gAAAAAAAAAH/wA8f8Ph/g////////////8AAAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/gMHfJ///x///////////v4AMAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/AMCOP///h//////////+JwAMAAAAAAAAAAAAAAAH///////4AAAAAAAAAAH/AAAHH///g//////////8BwAIAAAAAAAAAAAAAAAH///////wAAAAAAAAAAH+AAYGH///w//////////+w4A4AAAAAAAAAAAAAAAD///////wAAAAAAAAAAAgf+ACBs//////////////g4D4AAAAAAAAAAAAAAAB///////wAAAAAAAAAAAj/+AAAA//////////////AYf4AAAAAAAAAAAAAAAA///////gAAAAAAAAAAB//8AAAA//////////////Ah2AAAAAAAAAAAAAAAAAP/////+AAAAAAAAAAAD//+AAAB//////////////gDwAAAAAAAAAAAAAAAAAH/////8AAAAAAAAAAAH///4GAB//////////////gDAAAAAAAAAAAAAAAAAAG/////4AAAAAAAAAAAP///8P4h//////////////wCAAAAAAAAAAAAAAAAAACf////4AAAAAAAAAAAP////v////////////////gAAAAAAAAAAAAAAAAAAABP//hgYAAAAAAAAAAAP//////3//P///////////wAAAAAAAAAAAAAAAAAAAAv//AAYAAAAAAAAAAAf//////9//H///////////wAAAAAAAAAAAAAAAAAAAB3/+AAcAAAAAAAAAAB///////4//h///////////gAAAAAAAAAAAAAAAAAAAAR/+AANAAAAAAAAAAD///////8//wH//////////AAAAAAAAAAAAAAAAAAAAAJ/+AAEAAAAAAAAAAH///////+f/0B/////////+AAAAAAAAAAAAAAAAAAAAAI/8AAAAAAAAAAAAAH///////+f/44Af///////+QAAAAAAAAAAAAAAAAAAAAAf8AAAAAAAAAAAAAP////////H//+AP///////4gAAAAAAAAAAAAAAAAAAAAAP8AAuAAAAAAAAAAP////////H///AD///v///ggAAAAAAAAAAAAAAAAAAAAAH+AABgAAAAAAAAAf////////n//+AD//4P//YAAAAAAAAAAAAAAAAAAAAAAAP+A4AYAAAAAAAAAP////////j//+AAf/4H/+AAAAAAAAAAAAAAAAgAAAAAAAH/B4ABwAAAAAAAAP////////h//8AAf/gD/8YAAAAAAAAAAAAAAAAAAAAAAAD/nwAD9AAAAAAAAP////////x//4AAf/AD/8QAAAAAAAAAAAAAAAAAAAAAAAAf/wAAAAAAAAAAAP////////4//gAAf+AD/+AAwAAAAAAAAAAAAAAAAAAAAAAH/wAAAAAAAAAAAf////////4f+AAAf8AD//AAwAAAAAAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAf////////8f8AAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAf////////+fgAAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAf/////////eAAAAHwAAP/gAMAAAAAAAAAAAAAAAAAAAAAAAAHgAAAAAAAAAAf/////////gAAAAHwAAM/gACAAAAAAAAAAAAAAAAAAAAAAAADABAAAAAAAAAP/////////gYAAADwAAEfgAJAAAAAAAAAAAAAAAAAAAAAAAADgPfOAAAAAAAH/////////34AAADwAAIOABAAAAAAAAAAAAAAAAAAAAAAAAAAyPf+AAAAAAAD//////////4AAADoAAIEACBAAAAAAAAAAAAAAAAAAAAAAAAA8///AAAAAAAB//////////wAAABIAAMAAAFAAAAAAAAAAAAAAAAAAAAAAAAAE///gAAAAAAB//////////wAAAAMAAEAAALgAAAAAAAAAAAAAAAAAAAAAAAAAf//wAAAAAAAf/////////gAAAAMAADAAMCAAAAAAAAAAAAAAAAAAAAAAAAAA////gAAAAAAP/B///////gAAAAAAADgAOAAAAAAAAAAAAAAAAAAAAAAAAAAAf///wAAAAAACAA///////AAAAAAAAxgA+AAAAAAAAAAAAAAAAAAAAAAAAAAAf///4AAAAAAAAAD/////+AAAAAAAAZgB4AAAAAAAAAAAAAAAAAAAAAAAAAAB////4AAAAAAAAAD/////8AAAAAAAAMwH8AAAAAAAAAAAAAAAAAAAAAAAAAAB////8AAAAAAAAAH/////4AAAAAAAAHQf8AIAAAAAAAAAAAAAAAAAAAAAAAAD////8AAAAAAAAAH/////gAAAAAAAAHgf88IAAAAAAAAAAAAAAAAAAAAAAAAD////+AAAAAAAAAH/////AAAAAAAAADwf8AAgAAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAAH/////AAAAAAAAABwP5wBwAAAAAAAAAAAAAAAAAAAAAAAH/////6AAAAAAAAD////+AAAAAAAAAB8P5wATwAAAAAAAAAAAAAAAAAAAAAAD//////4AAAAAAAB////8AAAAAAAAAA8AxQif+AAAAAAAAAAAAAAAAAAAAAAH//////8AAAAAAAB////4AAAAAAAAAAcAAIAD/gAAAAAAAAAAAAAAAAAAAAAH///////gAAAAAAA////4AAAAAAAAAAMAAIAI/ywAAAAAAAAAAAAAAAAAAAAH///////gAAAAAAA////4AAAAAAAAAADgAAAI/8BAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAAf///4AAAAAAAAAAB+AAAA/4AIAAAAAAAAAAAAAAAAAAAB///////gAAAAAAAf///4AAAAAAAAAAAAmogAOMAAAAAAAAAAAAAAAAAAAAAB///////AAAAAAAAf///8AAAAAAAAAAAABCAAAGADAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAf///8AAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAf/////+AAAAAAAAP///8AAAAAAAAAAAAAAAgCAAAAAAAAAAAAAAAAAAAAAAAf/////8AAAAAAAAf///+AQAAAAAAAAAAAAB+CAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAAf///+AQAAAAAAAAAAAAD8DAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAA////+AwAAAAAAAAAAAA38DgAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAA////8BwAAAAAAAAAAAD/8DgAAAAA///////////////////////////////////////////////////////////+AAAAAAAAAAAAAAAAAAf////4AAAAAAAA////wPgAAAAAAAAAAAP//3wAAAACAAAAAAAAAAAAAAAAAAP////wAAAAAAAA////APgAAAAAAAAAAAP///wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAAf///4AAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAD////+AAIAAAAAAAAAAAAAAAAAAAAP////gAAAAAAAAP//+AfAAAAAAAAAAAf////+AAEAAAAAAAAAAAAAAAAAAAAP////AAAAAAAAAP///AfAAAAAAAAAAA//////AAAAAAAAAAAAAAAAAAAAAAAP///4AAAAAAAAAP//+APAAAAAAAAAAA//////gAAAAAAAAAAAAAAAAAAAAAAf///gAAAAAAAAAH//+AOAAAAAAAAAAB//////wAAAAAAAAAAAAAAAAAAAAAAf///AAAAAAAAAAH//4AEAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAH//4AAAAAAAAAAAAB//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAH//4AAAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAD//wAAAAAAAAAAAAAf/////8AAAAAAAAAAAAAAAAAAAAAAf//8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///4AAAAAAAAAAA//AAAAAAAAAAAAAAP/////4AAAAAAAAAAAAAAAAAAAAAAf//wAAAAAAAAAAA/+AAAAAAAAAAAAAAP/AP//wAAAAAAAAAAAAAAAAAAAAAA///gAAAAAAAAAAA/4AAAAAAAAAAAAAAf8AG//gAAAAAAAAAAAAAAAAAAAAAA//3AAAAAAAAAAAAYAAAAAAAAAAAAAAAOAAF//gAAAAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//AAABAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAgAAAAAAAAAAAAAAAAAD//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAQAAAAAAAAAAAAAAAAAB//gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABYAAAAcAAAAAAAAAAAAAAAAAB/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAD/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAADQAAAAAAAAAAAAAAAAAD/4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAHAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAOAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAAAAAH4AAAAAAB4HgAD8AAAAAAAAAAAAAAAAAAAAAAAAADgAAAAAAAAAAAAAAAAAA//AAAD//////////wAAAAAAAAAAAAAAAAAAAAAAADgAAAAAAAAAAAAAAAAAf///4Af///////////AAAAAAAAAAAAAAAAAAAAAAAz4AAAAAAAAAAAAAAAPz////8B/////////////wAAAAAAAAAAAAAAAAAAAAA78AAAAAAAAAAA8/8///////wf/////////////+AAAAAAAAAAAAAAAAAAAAH9+AAAAAAAAZ////////////w////////////////4AAAAAAAAAAAAAAAAAAAB+AAAAAAAB//////////////////////////////4AAAAAAAAABmAAB8f+HB/+AAAAAAAP//////////////////////////////gAAAAAAAAP/c/oAf/////4AAAAAAAP/////////////////////////////8AAAAAAAD/////////////gAAAAAAB//////////////////////////////wAAAAAAAD////////////wAAAAAAP///////////////////////////////wAAAAAD/////////////4AAAAAAD////////////////////////////////wAAAADh/////////////AAAAB8A/////////////////////////////////+AAAAA4Af///////////gAAAH+AA///////////////////////////////+AAAAAAAAH///////////+A/A/wAA///////////////////////////////8AAAAAAAf//////////////gAAAf////////////////////////////////+AAAAAAAH///////////////h////////////////////////////////////wAAAAAAP/////////////////////////////////////////////////////gA+/gAAH///////////////////////////////////////////////gAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const landBytes=Uint8Array.from(atob(LAND_B64),ch=>ch.charCodeAt(0));
+const isLand=(lat,lon)=>{const j=Math.min(179,Math.max(0,Math.floor(90-lat))),i=((Math.floor(lon+180)%360)+360)%360,k=j*360+i;return(landBytes[k>>3]>>(7-(k&7)))&1};
+const vec=(lat,lon)=>[cos(lat)*cos(lon),cos(lat)*sin(lon),sin(lat)];
+const DOTS=[];
+for(let lat=-84;lat<=84;lat+=2.6){const step=2.6/Math.max(cos(lat),.08);for(let lon=-180;lon<180;lon+=step)if(isLand(lat,lon))DOTS.push(vec(lat,lon))}
+const cv=document.getElementById('globe'),cx=cv.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0,H=0,DPR=1,GR=120,GX=0,GY=0;
+let yaw=0,pitch=20,vel=0,dragging=false,lastTouch=0,sun=null,lines=[],pst=null,lastSun=0;
+function layout(){
+  DPR=Math.min(devicePixelRatio||1,2);
+  const card=document.querySelector('.prayer'),colW=(card&&card.clientWidth)||document.querySelector('.app').clientWidth-32;
+  const wide=innerWidth>=820;
+  W=H=Math.round(Math.min(wide?176:140,Math.max(108,colW*(wide?0.42:0.36))));
+  document.documentElement.style.setProperty('--gs',W+'px');
+  cv.width=W*DPR;cv.height=H*DPR;GR=W/2-7;GX=GY=W/2;
+}
+function aimAtCity(){const c=city();yaw=c.lon+15;pitch=Math.max(-25,Math.min(25,c.lat*0.5));vel=0}
+function sunNow(ms){const sp=sunPos(jdOf(ms)),ut=(ms/3600e3)%24;let lon=15*(12-ut-sp.eqt);lon=((lon+540)%360)-180;return{lat:sp.decl,lon}}
+function buildLines(){
+  const s=sunNow(Date.now());sun={...s,v:vec(s.lat,s.lon)};pst=prayerState();
+  // Representative drawing: each prayer line is a single meridian, pole to pole, at the longitude where that
+  // prayer is starting right now on the selected city's latitude (falls back to the equator if it can't occur there).
+  const asrAlt=lat=>Math.atan(1/(1+Math.tan(Math.abs(lat-s.lat)*R)))/R;
+  const lonAt=(altFn,side,lat)=>{if(side===0)return s.lon;const a=altFn(lat),ch=(sin(a)-sin(lat)*sin(s.lat))/(cos(lat)*cos(s.lat));return Math.abs(ch)>1?NaN:s.lon+side*acosd(ch)};
+  const refLat=city().lat;
+  const mk=(altFn,side)=>{let lon=lonAt(altFn,side,refLat);if(isNaN(lon))lon=lonAt(altFn,side,0);
+    const pts=[];for(let lat=-90;lat<=90;lat+=1)pts.push(vec(lat,lon));return pts};
+  lines=[{i:0,p:mk(()=>-18,-1)},{i:1,p:mk(()=>-0.833,-1)},{i:2,p:mk(null,0)},
+    {i:3,p:mk(asrAlt,1)},{i:4,p:mk(()=>-0.833,1)},{i:5,p:mk(()=>-17,1)}];
+  lastSun=Date.now();
+}
+// rotate world vector into view space: returns [x,y,depth]
+let cy0,sy0,cp0,sp0;
+function setView(){cy0=cos(yaw);sy0=sin(yaw);cp0=cos(pitch);sp0=sin(pitch)}
+function pr(v){const a=v[0]*cy0+v[1]*sy0,b=-v[0]*sy0+v[1]*cy0,z=v[2];return[GX+GR*b,GY-GR*(cp0*z-sp0*a),sp0*z+cp0*a]}
+function draw(){
+  if(!sun||Date.now()-lastSun>20000)buildLines();
+  setView();
+  cx.setTransform(DPR,0,0,DPR,0,0);cx.clearRect(0,0,W,H);
+  let g=cx.createRadialGradient(GX,GY,GR*.92,GX,GY,GR*1.12);
+  g.addColorStop(0,'rgba(58,123,213,.16)');g.addColorStop(1,'rgba(58,123,213,0)');
+  cx.fillStyle=g;cx.beginPath();cx.arc(GX,GY,GR*1.12,0,7);cx.fill();
+  g=cx.createRadialGradient(GX-GR*.35,GY-GR*.4,GR*.1,GX,GY,GR);
+  g.addColorStop(0,'#FFFFFF');g.addColorStop(.7,'#DCEAFB');g.addColorStop(1,'#C3D8F2');
+  cx.fillStyle=g;cx.beginPath();cx.arc(GX,GY,GR,0,7);cx.fill();
+  cx.strokeStyle='rgba(58,110,190,.28)';cx.lineWidth=1;cx.stroke();
+  const ds=1.3,sv=sun.v;
+  for(const v of DOTS){
+    const p=pr(v);if(p[2]<=0)continue;
+    const alt=v[0]*sv[0]+v[1]*sv[1]+v[2]*sv[2];
+    const day=alt>0?1:alt>-.3?(alt+.3)/.3*.5:0;
+    cx.globalAlpha=(.58+.14*day)*(.45+.55*p[2]);
+    cx.fillStyle=day>.6?'#3E6FB5':'#6D90C4';
+    cx.fillRect(p[0]-ds/2,p[1]-ds/2,ds,ds);
+  }
+  cx.globalAlpha=1;
+  // prayer lines, clipped cleanly at the horizon
+  const placed=[];
+  const order=[...lines].sort((a,b)=>(b.i===pst.next.i)-(a.i===pst.next.i));
+  cx.lineCap='round';cx.lineJoin='round';
+  for(const L of order){
+    const hot=L.i===pst.next.i,segs=[];let cur=null,prev=null,prevP=null;
+    for(const v of L.p){
+      if(!v){cur=null;prev=null;continue}
+      const p=pr(v);
+      if(p[2]>0){
+        if(!cur){cur=[];segs.push(cur);
+          if(prev&&prevP[2]<=0){const t=prevP[2]/(prevP[2]-p[2]);cur.push([prevP[0]+(p[0]-prevP[0])*t,prevP[1]+(p[1]-prevP[1])*t,0])}}
+        cur.push(p);
+      }else{
+        if(cur&&prevP&&prevP[2]>0){const t=prevP[2]/(prevP[2]-p[2]);cur.push([prevP[0]+(p[0]-prevP[0])*t,prevP[1]+(p[1]-prevP[1])*t,0])}
+        cur=null;
+      }
+      prev=v;prevP=p;
+    }
+    const paint=(w,col)=>{cx.strokeStyle=col;cx.lineWidth=w;for(const s of segs){if(s.length<2)continue;cx.beginPath();cx.moveTo(s[0][0],s[0][1]);for(let k=1;k<s.length;k++)cx.lineTo(s[k][0],s[k][1]);cx.stroke()}};
+    if(hot){paint(6,'rgba(176,127,42,.14)');paint(1.8,'rgba(176,120,30,.95)')}
+    else paint(1.1,'rgba(176,127,42,.42)');
+    // label: highest visible point a bit inside the limb
+    let best=null;for(const s of segs)for(const p of s)if(p[2]>.25&&(!best||p[1]<best[1]))best=p;
+    if(false&&best&&hot&&!placed.some(q=>Math.abs(q[0]-best[0])<60&&Math.abs(q[1]-best[1])<18)){
+      placed.push(best);cx.font='600 8.5px "Instrument Sans",system-ui,sans-serif';cx.textAlign='center';
+      cx.fillStyle=hot?'#E0CA9C':'rgba(212,188,142,.6)';cx.fillText(NAMES[L.i].toLocaleUpperCase('tr'),best[0],best[1]-7);
+    }
+  }
+  // pomodoro ring around the globe
+  const pm=S.pomo;
+  if(pm&&(pm.running||pm.left<pm.len[pm.mode]*60)){
+    const tot=pm.len[pm.mode]*60,fr=Math.max(0,Math.min(1,1-pomoLeft()/tot)),rr=GR+4.5;
+    cx.lineCap='round';cx.lineWidth=3;
+    cx.strokeStyle='rgba(58,123,213,.14)';cx.beginPath();cx.arc(GX,GY,rr,0,Math.PI*2);cx.stroke();
+    cx.strokeStyle=pm.mode==='focus'?'#3A7BD5':'#2E9A70';cx.beginPath();cx.arc(GX,GY,rr,-Math.PI/2,-Math.PI/2+fr*Math.PI*2);cx.stroke();
+  }
+  // cities
+  const c=city();cx.textAlign='left';
+  const boxes=[];
+  for(const n of new Set([c.name,...LABELS])){
+    if(n!==c.name)continue;const q=CITIES.find(x=>x.name===n),p=pr(vec(q.lat,q.lon));if(p[2]<=.15)continue;
+    const me=n===c.name;cx.globalAlpha=me?1:.35+.55*p[2];
+    cx.font=`italic ${me?500:400} ${me?15:12.5}px Newsreader,Georgia,serif`;
+    const tw=cx.measureText(n).width,x=p[0]+6+tw>W-4?p[0]-6-tw:p[0]+6;
+    if(boxes.some(b=>x<b[2]&&x+tw>b[0]&&p[1]-16<b[3]&&p[1]>b[1]))continue;boxes.push([x-4,p[1]-16,x+tw+4,p[1]+2]);
+    if(me){cx.fillStyle='rgba(176,127,42,.25)';cx.beginPath();cx.arc(p[0],p[1],7,0,7);cx.fill()}
+    cx.fillStyle=me?'#B07F2A':'#3E6FB5';cx.beginPath();cx.arc(p[0],p[1],me?2.8:1.6,0,7);cx.fill();
+    
+  }
+  cx.globalAlpha=1;
+}
+/* smooth animation: gentle auto-spin, drag with inertia */
+let running=false,lastT=0;
+function frame(t){
+  if(!running)return;
+  const dt=Math.min(.05,(t-(lastT||t))/1000);lastT=t;
+  if(!dragging){
+    if(Math.abs(vel)>.5){yaw+=vel*dt;vel*=Math.pow(.04,dt)}
+    else{vel=0;if(!reduce&&performance.now()-lastTouch>2500)yaw-=4*dt}
+  }
+  draw();requestAnimationFrame(frame);
+}
+function visible(){const r=cv.getBoundingClientRect();return view==='vToday'&&!document.hidden&&r.bottom>0&&r.top<innerHeight}
+function startGlobe(){
+  if(!W)layout();
+  if(visible()&&!running){running=true;lastT=0;requestAnimationFrame(frame)}
+  else if(!visible())running=false;
+  if(!running)draw();
+}
+let dx0=0,yaw0=0,lastX=0,lastMoveT=0;
+cv.addEventListener('pointerdown',e=>{dragging=true;dx0=lastX=e.clientX;yaw0=yaw;vel=0;lastMoveT=performance.now();cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(!dragging)return;const now=performance.now(),k=110/GR;
+  yaw=yaw0-(e.clientX-dx0)*k;const dt=(now-lastMoveT)/1000;if(dt>0)vel=vel*.6+(-(e.clientX-lastX)*k/dt)*.4;lastX=e.clientX;lastMoveT=now;if(!running)draw()});
+const endDrag=()=>{if(!dragging)return;dragging=false;lastTouch=performance.now();if(performance.now()-lastMoveT>80)vel=0;vel=Math.max(-240,Math.min(240,vel))};
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+addEventListener('scroll',startGlobe,{passive:true});
+document.addEventListener('visibilitychange',startGlobe);
+addEventListener('resize',()=>{layout();draw()});
+
+/* ---------- kıble ---------- */
+const KAABA={lat:21.4225,lon:39.8262};
+function qiblaBearing(c){const f1=c.lat*R,f2=KAABA.lat*R,dl=(KAABA.lon-c.lon)*R;return((Math.atan2(Math.sin(dl),Math.cos(f1)*Math.tan(f2)-Math.sin(f1)*Math.cos(dl))/R)+360)%360}
+function kaabaKm(c){const f1=c.lat*R,f2=KAABA.lat*R,df=f2-f1,dl=(KAABA.lon-c.lon)*R,a=Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
+function sunAzAlt(c,ms){const sp=sunPos(jdOf(ms)),ut=(ms/3600e3)%24,solar=ut+c.lon/15+sp.eqt,H=15*(solar-12);
+  const alt=asind(sin(c.lat)*sin(sp.decl)+cos(c.lat)*cos(sp.decl)*cos(H));
+  const az=((Math.atan2(sin(H),cos(H)*sin(c.lat)-Math.tan(sp.decl*R)*cos(c.lat))/R)+180+360)%360;return{az,alt}}
+const DIRS=['kuzey','kuzeydoğu','doğu','güneydoğu','güney','güneybatı','batı','kuzeybatı'];
+const dirName=a=>DIRS[Math.round(a/45)%8];
+function qiblaTime(c,q){ // when the sun stands exactly in the qibla direction today (sun above horizon)
+  const [y,m,d]=localYMD(Date.now(),c.tz),start=Date.UTC(y,m-1,d)-14*3600e3;let prev=null,hit=null;
+  for(let t=start;t<start+48*3600e3;t+=60e3){const [yy,mm,dd]=localYMD(t,c.tz);if(dd!==d)continue;const s=sunAzAlt(c,t);
+    let diff=((s.az-q+540)%360)-180;if(prev!==null&&Math.sign(diff)!==Math.sign(prev)&&Math.abs(diff-prev)<90&&s.alt>3){hit=t;break}prev=diff}
+  return hit;
+}
+let rotAcc=0,liveHeading=null,liveOn=false,hx=null,hy=null,aligned=false,drawPending=false;
+function onOrient(e){
+  let h=null;
+  if(typeof e.webkitCompassHeading==='number'&&!isNaN(e.webkitCompassHeading))h=e.webkitCompassHeading; // iOS: true heading
+  else if((e.absolute||e.type==='deviceorientationabsolute')&&typeof e.alpha==='number')h=(360-e.alpha)%360; // Android: absolute alpha
+  if(h==null)return;
+  const so=(screen.orientation&&screen.orientation.angle)||window.orientation||0;h=(h+so+360)%360; // landscape compensation
+  // circular low-pass filter so the dial turns smoothly instead of jittering
+  const x=Math.cos(h*R),y=Math.sin(h*R);if(hx==null){hx=x;hy=y}else{hx+=(x-hx)*.18;hy+=(y-hy)*.18}
+  liveHeading=((Math.atan2(hy,hx)/R)+360)%360;
+  if(!drawPending){drawPending=true;requestAnimationFrame(()=>{drawPending=false;if(!qiblaSheet.hidden)drawQibla()})}
+}
+function stopLiveCompass(){if(!liveOn)return;liveOn=false;liveHeading=null;hx=hy=null;aligned=false;removeEventListener('deviceorientationabsolute',onOrient);removeEventListener('deviceorientation',onOrient)}
+async function startLiveCompass(fromTap){
+  if(liveOn)return;
+  const needsPerm=window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function';
+  if(needsPerm&&!fromTap){qLive.textContent='Canlı pusulayı başlat';return} // iPhone: permission needs a tap
+  try{if(needsPerm){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')throw 0}}catch(e){qNote.textContent='Telefonun pusulasına izin verilmedi. Kuzeyi pusula uygulamasıyla bulup kıble açısı kadar dönebilirsin.';return}
+  liveOn=true;qLive.textContent='Canlı pusulayı kapat';qNote.textContent='Telefonu yere paralel tut ve yavaşça kendi etrafında dön. Pusula şaşarsa telefonu havada 8 çizer gibi birkaç kez salla.';
+  addEventListener('deviceorientationabsolute',onOrient);addEventListener('deviceorientation',onOrient);
+  setTimeout(()=>{if(liveOn&&liveHeading==null){stopLiveCompass();qLive.textContent='Canlı pusulayı aç (telefonun pusulası)';
+    qNote.textContent='Bu görünümde telefonun pusulası okunamıyor: Claude içinde açılan sayfalara tarayıcı pusula vermiyor. Uygulamayı kendi sitende (ör. GitHub Pages) açınca canlı pusula çalışır. Şimdilik kuzeyi pusula uygulamasıyla bul ya da güneş yöntemini kullan.'}},2500);
+}
+qLive.onclick=()=>{if(liveOn){stopLiveCompass();qLive.textContent='Canlı pusulayı aç';drawQibla();return}startLiveCompass(true)};
+function drawQibla(){
+  const c=city(),q=qiblaBearing(c),now=Date.now(),sun=sunAzAlt(c,now);
+  // keep rotation continuous across 0°/360° so the dial never spins the long way round
+  const target=liveHeading!=null?-liveHeading:0;if(liveHeading!=null){const dd=((qiblaBearing(city())-liveHeading+540)%360)-180;const ok=Math.abs(dd)<=4;if(ok&&!aligned){try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}}aligned=ok}rotAcc+=((target-rotAcc+540)%360)-180;const rot=rotAcc;
+  const P=(a,r)=>[150+r*Math.sin(a*R),150-r*Math.cos(a*R)];
+  let ticks='';for(let a=0;a<360;a+=5){const big=a%30===0,[x1,y1]=P(a,128),[x2,y2]=P(a,big?116:122);ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${big?'#5D6F8D':'#B9C6DA'}" stroke-width="${big?1.6:1}"/>`}
+  const lbl=[['K',0],['D',90],['G',180],['B',270]].map(([t,a])=>{const [x,y]=P(a,100);return `<text x="${x}" y="${y+5}" text-anchor="middle" font-size="15" font-weight="700" fill="${t==='K'?'#C95F4E':'#5D6F8D'}">${t}</text>`}).join('');
+  const [kx,ky]=P(q,128),[tx,ty]=P(q,62);
+  const sunMark=sun.alt>0?(()=>{const [sx,sy]=P(sun.az,140);return `<g><circle cx="${sx}" cy="${sy}" r="9" fill="#F2C25B" stroke="#fff" stroke-width="2"/><text x="${sx}" y="${sy+4}" text-anchor="middle" font-size="10">☀</text></g>`})():'';
+  qDial.innerHTML=`<defs><radialGradient id="qbg" cx="45%" cy="40%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E2ECF8"/></radialGradient></defs>
+    <g class="rot" style="transform-origin:150px 150px;transform:rotate(${rot}deg)">
+      <circle cx="150" cy="150" r="134" fill="url(#qbg)" stroke="#C9D7EA" stroke-width="1.5"/>${ticks}${lbl}
+      <line x1="150" y1="150" x2="${kx.toFixed(1)}" y2="${ky.toFixed(1)}" stroke="#B07F2A" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="${kx.toFixed(1)}" cy="${ky.toFixed(1)}" r="15" fill="#1B2A41"/><rect x="${(kx-7).toFixed(1)}" y="${(ky-7).toFixed(1)}" width="14" height="14" rx="1.5" fill="#1B2A41" stroke="#D9B45A" stroke-width="1.6"/><line x1="${(kx-7).toFixed(1)}" y1="${(ky-3).toFixed(1)}" x2="${(kx+7).toFixed(1)}" y2="${(ky-3).toFixed(1)}" stroke="#D9B45A" stroke-width="1.6"/>
+      ${sunMark}
+    </g>
+    ${liveHeading!=null?`<path d="M150 0 l10 18 h-20z" fill="${aligned?'#2E9A70':'#3A7BD5'}"/><circle cx="150" cy="150" r="140" fill="none" stroke="${aligned?'#2E9A70':'transparent'}" stroke-width="5"/>`:''}
+    <circle cx="150" cy="150" r="5" fill="#1B2A41"/>`;
+  const km=Math.round(kaabaKm(c)).toLocaleString('tr-TR');
+  qSum.innerHTML=`${esc(c.name)} için kıble açısı <b>${Math.round(q)}°</b> (${dirName(q)}) · Kâbe’ye ${km} km`;
+  const rows=[];
+  if(liveHeading!=null){let d=Math.round(((q-liveHeading+540)%360)-180);const ok=Math.abs(d)<=4;
+    rows.unshift(['📱',ok?'<b style="color:var(--good)">Kıbleye dönüksün ✓</b> Telefonun üst ucu tam kıbleyi gösteriyor.':`Telefonu <b>${Math.abs(d)}° ${d>0?'sağa':'sola'}</b> çevir. Üstteki mavi ok ile Kâbe simgesi hizalanınca tamam.`])}
+  else rows.push(['🧭',`Kuzeyden saat yönünde <b>${Math.round(q)}°</b> dön. Kadranda <b>K</b> kuzey; altın çizginin ucundaki Kâbe simgesi kıbleyi gösterir.`]);
+  if(sun.alt>0){let d=Math.round(((q-sun.az+540)%360)-180);rows.push(['☀️',Math.abs(d)<=3?'<b>Güneş şu an tam kıble yönünde.</b> Yüzünü güneşe dön.':`Güneşe dön, sonra <b>${Math.abs(d)}° ${d>0?'sağa':'sola'}</b> dön: kıble orası.`])}
+  else rows.push(['🌙','Güneş şu an ufkun altında; güneş yöntemi gündüz çalışır.']);
+  const qt=qiblaTime(c,q);
+  rows.push(['⏱',qt?`Bugün <b>${fmtT(qt,c.tz)}</b>’de güneş tam kıble yönünde olur; o an yüzünü güneşe dönen kıbleye dönmüş olur.`:'Bugün güneş, bu şehirde gündüz vakti tam kıble yönüne gelmiyor.']);
+  qInfo.innerHTML=rows.map(([i,t])=>`<div class="qrow"><span class="qi" aria-hidden="true">${i}</span><span>${t}</span></div>`).join('');
+}
+qiblaBtn.onclick=()=>{drawQibla();scrim.hidden=qiblaSheet.hidden=false;qiblaSheet.scrollTop=0;startLiveCompass(false)};
+
+/* ---------- ders kaynakları (shared db: editors write, everyone reads) ---------- */
+const RES={db:null,user:null,canEdit:false,items:[],state:'loading',open:null,q:'',editing:null};
+function normUrl(u){u=String(u||'').trim();if(!u)return null;if(!/^https?:\/\//i.test(u))u='https://'+u;try{const x=new URL(u);return(x.protocol==='http:'||x.protocol==='https:')?x.href:null}catch(e){return null}}
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return''}};
+// ready-made lesson folders; anyone allowed to add can put any web link into them
+const RES_FOLDERS=[["Kur'an",'📖'],['Tecvid','🎙️'],['Arapça','🔤'],['Sarf','🧩'],['Nahiv','📐'],['Fıkıh','⚖️'],['Usûl-i Fıkıh','🏛️'],['Hadis','📜'],['Hadis Usûlü','🔎'],['Tefsir','📘'],['Siyer','🕌'],['Akaid','💡'],['Ahlak','🤍'],['İngilizce','🌍'],['Matematik','➗'],['Genel','🗂️']];
+const tr=x=>String(x||'').toLocaleLowerCase('tr');
+function resFolders(){
+  const m=new Map();
+  for(const [n,e] of RES_FOLDERS)m.set(tr(n),{name:n,emoji:e,mine:false});
+  for(const h of S.habits.filter(h=>h.kind==='ders')){const k=tr(h.name);if(m.has(k))m.get(k).mine=true;else m.set(k,{name:h.name,emoji:h.emoji||'📘',mine:true})}
+  for(const r of RES.items)if(r.subject&&!m.has(tr(r.subject)))m.set(tr(r.subject),{name:r.subject,emoji:'📁',mine:false});
+  const arr=[...m.values()];arr.sort((a,b)=>(b.mine-a.mine));return arr;
+}
+function resSubjects(){return resFolders().map(f=>f.name)}
+async function itemsHtml(items,showGroup){
+  let names={};
+  if(RES.user){const ids=[...new Set(items.map(r=>r.addedBy).filter(Boolean))];if(ids.length)try{names=await RES.user.profiles(ids)}catch(e){}}
+  return items.map(r=>{const host=hostOf(r.url),who=(names[r.addedBy]&&names[r.addedBy].name)||'';
+    const when=r.createdAt?new Intl.DateTimeFormat('tr-TR',{day:'numeric',month:'short'}).format(r.createdAt):'';
+    return `<div class="ritem"><span class="rfav" aria-hidden="true">${esc((host||r.title||'?')[0])}</span>
+      <div class="rbody"><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.title||host)}</a><span class="rdom">${esc(host)}${showGroup?' · '+esc(r.subject):''}</span>
+      ${r.note?`<span class="rnote">${esc(r.note)}</span>`:''}<span class="rmeta">${who?esc(who)+' · ':''}${esc(when)}</span></div>
+      ${RES.canEdit?`<div class="racts"><button type="button" data-redit="${esc(r.id)}">Düzenle</button><button type="button" class="del" data-rdel="${esc(r.id)}">Sil</button></div>`:''}</div>`}).join('');
+}
+async function renderRes(){
+  const open=RES.open,ready=RES.state==='ready',q=tr(RES.q);
+  const folders=resFolders(),counts={};for(const r of RES.items){const k=tr(r.subject);counts[k]=(counts[k]||0)+1}
+  const f=open?folders.find(x=>tr(x.name)===tr(open))||{name:open,emoji:'📁'}:null;
+  resTitle.textContent=f?`${f.emoji} ${f.name}`:'Ders kaynakları';
+  rBack.hidden=!f;
+  resSub.textContent=RES.state==='off'?'Kaynaklar bu görünümde açılamıyor. Uygulamayı claude.ai üzerinden, oturum açıkken aç.'
+    :RES.state==='loading'?'Kaynaklar yükleniyor…'
+    :f?`${counts[tr(f.name)]||0} link${RES.canEdit?' · web’den istediğin bağlantıyı ekleyebilirsin':''}`
+    :RES.canEdit?'Bir derse dokun, içine web’den istediğin linki ekle. Sen ve editörlerin ekler, herkes görür.':'Bir derse dokunup içindeki linkleri aç. Linkleri editörler ekler.';
+  rSubjects.innerHTML=folders.map(x=>`<option value="${esc(x.name)}"></option>`).join('');
+  rOpenForm.hidden=!(RES.canEdit&&ready)||!resForm.hidden;
+  rOpenForm.textContent=f?`+ ${f.name} için link ekle`:'+ Link ekle';
+  rSubjectWrap.hidden=!!f&&!RES.editing;
+  if(!ready){rFolders.innerHTML='';resList.innerHTML='';return}
+  if(q){
+    rFolders.innerHTML='';
+    const items=RES.items.filter(r=>(!f||tr(r.subject)===tr(f.name))&&[r.title,r.note,r.subject,r.url].some(x=>tr(x).includes(q)));
+    resList.innerHTML=items.length?await itemsHtml(items,!f):'<div class="empty">Aramana uyan link yok.</div>';return;
+  }
+  if(!f){
+    resList.innerHTML='';
+    rFolders.innerHTML=folders.map(x=>{const n=counts[tr(x.name)]||0;return `<button type="button" class="rfold${n?'':' empty0'}${x.mine?' mine':''}" data-open="${esc(x.name)}"><span class="re" aria-hidden="true">${esc(x.emoji)}</span><span><b>${esc(x.name)}</b><small>${n?n+' link':'Henüz link yok'}</small></span></button>`}).join('');
+    return;
+  }
+  rFolders.innerHTML='';
+  const items=RES.items.filter(r=>tr(r.subject)===tr(f.name));
+  resList.innerHTML=items.length?await itemsHtml(items,false):`<div class="empty">${RES.canEdit?'Bu derste henüz link yok.<br>Yukarıdaki “+ Link ekle” ile web’den istediğin bağlantıyı ekle.':'Bu derste henüz link yok.'}</div>`;
+}
+rFolders.onclick=e=>{const b=e.target.closest('[data-open]');if(!b)return;RES.open=b.dataset.open;RES.q='';rSearch.value='';resetResForm();renderRes();scrollTo(0,0)};
+rBack.onclick=()=>{RES.open=null;RES.q='';rSearch.value='';resetResForm();renderRes();scrollTo(0,0)};
+rSearch.oninput=()=>{RES.q=rSearch.value;renderRes()};
+function resetResForm(){RES.editing=null;resForm.reset();resForm.hidden=true;resFormTitle.textContent='Link ekle';rSave.textContent='Ekle';rErr.hidden=true}
+rOpenForm.onclick=()=>{resetResForm();resForm.hidden=false;if(RES.open)rSubject.value=RES.open;renderRes();rUrl.focus()};
+rCancel.onclick=()=>{resetResForm();renderRes()};
+resForm.onsubmit=async e=>{
+  e.preventDefault();if(!RES.db)return;
+  const url=normUrl(rUrl.value),subject=(RES.open&&!RES.editing?RES.open:rSubject.value).trim();
+  if(!url){rErr.textContent='Bağlantı geçerli değil. Web adresini (https://…) yapıştır.';rErr.hidden=false;return}
+  if(!subject){rErr.textContent='Bir ders seç.';rErr.hidden=false;return}
+  const title=rTitle.value.trim()||hostOf(url);
+  rSave.disabled=true;rErr.hidden=true;
+  const body={subject,title,url,note:rNote.value.trim()};
+  try{
+    if(RES.editing){await RES.db.doc('resources/'+RES.editing).update(body);toast('Link güncellendi')}
+    else{const me=RES.user?await RES.user.id():null;await RES.db.collection('resources').add({...body,addedBy:me,createdAt:Date.now()});toast(`Link eklendi · ${subject}`)}
+    resetResForm();renderRes();
+  }catch(err){
+    rErr.textContent=err&&err.code==='invalid_argument'?'Kaydedilemedi: link eklemek için editör olman gerekiyor.':err&&err.code==='quota_exceeded'?'Kaydedilemedi: link sınırı doldu, birkaç eskisini sil.':'Kaydedilemedi, bağlantı sorunu olabilir. Tekrar dene.';
+    rErr.hidden=false;if(err&&err.code==='invalid_argument'){RES.canEdit=false;renderRes()}
+  }finally{rSave.disabled=false}
+};
+resList.onclick=async e=>{
+  const ed=e.target.closest('[data-redit]'),dl=e.target.closest('[data-rdel]');
+  if(ed){const r=RES.items.find(x=>x.id===ed.dataset.redit);if(!r)return;resetResForm();RES.editing=r.id;rSubject.value=r.subject||'';rTitle.value=r.title||'';rUrl.value=r.url||'';rNote.value=r.note||'';
+    resFormTitle.textContent='Linki düzenle';rSave.textContent='Kaydet';resForm.hidden=false;renderRes();resForm.scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(dl){if(!dl.dataset.armed){dl.dataset.armed='1';dl.textContent='Emin misin?';setTimeout(()=>{dl.dataset.armed='';dl.textContent='Sil'},3000);return}
+    try{await RES.db.doc('resources/'+dl.dataset.rdel).delete();toast('Link silindi')}catch(err){toast('Silinemedi, tekrar dene')}}
+};
+(async()=>{
+  const use=window.claude&&window.claude.use;
+  const [db,user]=use?await Promise.all([window.claude.use('db'),window.claude.use('user')]):[null,null];
+  RES.db=db;RES.user=user;
+  RES.canEdit=user?await user.canEdit():false;
+  if(!db){RES.state='off';if(view==='vRes')renderRes();return}
+  db.collection('resources').orderBy('createdAt','desc').limit(500).onSnapshot(snap=>{
+    RES.items=snap.docs.map(d=>{const x=d.data()||{};return{id:d.id,subject:String(x.subject||''),title:String(x.title||''),url:normUrl(x.url)||'#',note:String(x.note||''),addedBy:typeof x.addedBy==='string'?x.addedBy:null,createdAt:typeof x.createdAt==='number'?x.createdAt:0}});
+    RES.state='ready';if(view==='vRes')renderRes();
+  },err=>{RES.state='off';if(view==='vRes')renderRes()});
+})();
+
+/* ---------- pomodoro ---------- */
+// rak'ats per prayer (sünnet + farz, Hanefî; Yatsı includes vitir). Güneş has no prayer.
+const RAKAT={0:4,2:10,3:8,4:5,5:13};
+const PRAYER_NAME={0:'Sabah',2:'Öğle',3:'İkindi',4:'Akşam',5:'Yatsı'};
+const prayerBreak=i=>RAKAT[i]?RAKAT[i]+10:0; // minutes
+function pomoPlan(now=Date.now()){
+  const ps=prayerState(now),p=P(),F=p.len.focus*60e3,Sh=p.len.short*60e3,Lg=p.len.long*60e3;
+  // current prayer block (namaz arası) if we are inside one
+  const cur=ps.roll[0],curEnd=cur.t+prayerBreak(cur.i)*60e3;
+  const inPrayer=prayerBreak(cur.i)>0&&now<curEnd;
+  // next prayer that actually has a namaz (skip Güneş)
+  const target=ps.roll.slice(1).find(x=>prayerBreak(x.i)>0);
+  let start=inPrayer?curEnd:now;
+  // if a focus session is running, plan from its end
+  const blocks=[];
+  if(prayerBreak(cur.i)>0)blocks.push(['n',cur.t,Math.min(curEnd,now)]);
+  const pastFrom=prayerBreak(cur.i)>0?curEnd:cur.t;if(now>pastFrom)blocks.push(['p',pastFrom,now]);
+  blocks.push(['now',now,now]);
+  if(inPrayer)blocks.push(['n',now,curEnd]);
+  let t=start,n=p.done||0,sets=0,lastEnd=null;
+  if(p.running&&p.mode==='focus'){const e=Math.min(p.endAt,target.t);blocks.push(['f',now,e]);t=e;n++;sets++;lastEnd=e;
+    if(t<target.t){const br=n%4===0?Lg:Sh;blocks.push([n%4===0?'l':'s',t,Math.min(t+br,target.t)]);t+=br}}
+  else if(p.running){const e=Math.min(p.endAt,target.t);blocks.push([p.mode==='long'?'l':'s',now,e]);t=e}
+  while(t+F<=target.t){blocks.push(['f',t,t+F]);t+=F;n++;sets++;lastEnd=t;const br=n%4===0?Lg:Sh;if(t>=target.t)break;blocks.push([n%4===0?'l':'s',t,Math.min(t+br,target.t)]);t+=br}
+  if(t<target.t)blocks.push(['x',Math.max(t,start),target.t]);
+  return{ps,inPrayer,cur,curEnd,target,sets,lastEnd,blocks,from:cur.t,to:target.t,spare:Math.max(0,target.t-(lastEnd||start))};
+}
+function renderPlan(){
+  const pl=pomoPlan(),tz=pl.ps.c.tz,tot=pl.to-pl.from;
+  const pct=(Math.max(0,Math.min(1,(Date.now()-pl.from)/tot))*100).toFixed(2)+'%';
+  pNow.style.setProperty('--x',pct);pBar.style.setProperty('--x',pct);
+  // planned sets drawn on the empty (future) part of the bar
+  const now=Date.now(),pos=t=>((t-pl.from)/tot*100).toFixed(2);
+  // past part: where pomodoros could have fit since the vakit began (ideal grid after the namaz arası)
+  const p=P(),F=p.len.focus*60e3,Sh=p.len.short*60e3,Lg=p.len.long*60e3;
+  const past=[];{let t=pl.cur.t+prayerBreak(pl.cur.i)*60e3,n=0;while(t+F<=pl.to&&t<now){past.push([t,Math.min(t+F,now)]);n++;t+=F+(n%4===0?Lg:Sh)}}
+  const seg=(cls,a,b)=>`<i class="seg ${cls}" style="left:${pos(a)}%;width:max(3px,calc(${(pos(b)-pos(a)).toFixed(2)}% - 2px))"></i>`;
+  pBar.innerHTML=past.filter(([a,b])=>b-a>60e3).map(([a,b])=>seg('was',a,b)).join('')
+    +pl.blocks.filter(([k,a,b])=>b>now&&(k==='f'||k==='n')).map(([k,a,b])=>seg(k,Math.max(a,now),b)).join('');
+  pFrom.innerHTML=`<b>${NAMES[pl.cur.i]}</b><small>${fmtT(pl.cur.t,tz)}</small>`;
+  pTo.innerHTML=`<b>${NAMES[pl.target.i]}</b><small>${fmtT(pl.target.t,tz)}</small>`;
+  const left=fmtMin((pl.target.t-Date.now())/60e3);
+  pPlan.innerHTML=pl.inPrayer
+    ?`<b>${PRAYER_NAME[pl.cur.i]} namazı arası</b> · bitiş ${fmtT(pl.curEnd,tz)}`
+    :pl.sets>0?`${NAMES[pl.target.i]} vaktine ${left} · <b style="color:var(--sand)">${pl.sets} set</b> sığar`:`${NAMES[pl.target.i]} vaktine ${left} · tam set sığmıyor`;
+  pBar.title=`${NAMES[pl.cur.i]} vaktinden ${NAMES[pl.target.i]} vaktine geçen süre`;
+}
+/* vibration alerts (Vibration API: Android browsers; not supported on iPhone/iPad) */
+const VIB_PATTERNS={pomo:[250,120,250,120,250],brk:[600,150,600],prayer:[150,100,150,100,500]};
+function vibOn(k){return !S.vib||S.vib[k]!==false}
+function vibrateNow(pattern){try{return !!(navigator.vibrate&&navigator.vibrate(pattern))}catch(e){return false}}
+function buzz(k){if(vibOn(k))vibrateNow(VIB_PATTERNS[k])}
+let lastWarnCheck=Date.now();
+function prayerWarn(){
+  const now=Date.now(),ps=prayerState(now),soon=5*60e3;
+  const hit=ps.roll.find(x=>prayerBreak(x.i)>0&&x.t-soon>lastWarnCheck&&x.t-soon<=now);
+  lastWarnCheck=now;
+  if(hit&&vibOn('prayer')){buzz('prayer');chime('prayer');toast(`${PRAYER_NAME[hit.i]} vaktine 5 dakika kaldı · ${fmtT(hit.t,ps.c.tz)}`)}
+}
+setInterval(prayerWarn,5000);
+let lastPrayerCheck=Date.now();
+function prayerAutoPause(){
+  const p=P(),now=Date.now(),ps=prayerState(now);
+  const hit=[...ps.t].map((t,i)=>({t,i})).find(x=>prayerBreak(x.i)>0&&x.t>lastPrayerCheck&&x.t<=now);
+  lastPrayerCheck=now;
+  if(hit&&p.running){
+    if(p.mode==='focus'){const h=pomoCredit((p.startLeft||p.len.focus*60)-pomoLeft());}
+    p.left=pomoLeft();p.running=false;p.endAt=null;save();
+    toast(`${PRAYER_NAME[hit.i]} vakti girdi · ${prayerBreak(hit.i)} dk namaz arası, sayaç duraklatıldı`);chime('prayer');touch();
+  }
+}
+setInterval(prayerAutoPause,5000);
+const PM={focus:'Odak',short:'Kısa mola',long:'Uzun mola'};
+function pomoInit(){
+  const p=S.pomo||(S.pomo={});
+  p.len=Object.assign({focus:25,short:5,long:15},p.len||{});
+  if(!p.mode)p.mode='focus';
+  if(p.left==null)p.left=p.len[p.mode]*60;
+  if(!p.day||p.day!==key(today())){p.day=key(today());p.done=0}
+  return p;
+}
+const P=()=>S.pomo;
+function pomoLeft(){const p=P();return p.running?Math.max(0,Math.round((p.endAt-Date.now())/1000)):p.left}
+function pomoSetMode(m,keepStopped=true){const p=P();p.mode=m;p.running=false;p.endAt=null;p.left=p.len[m]*60;p.startLeft=p.left;save();renderPomo()}
+function pomoCredit(sec){
+  const p=P(),h=S.habits.find(x=>x.id===p.habitId);if(!h||sec<60)return null;
+  const k=key(today());
+  if(h.type==='timer')h.log[k]=(h.log[k]||0)+sec;else if(h.type==='count')h.log[k]=(h.log[k]||0)+1;else h.log[k]=1;
+  return h;
+}
+let audioCtx=null;
+const TONES={pomo:[660,880,990],brk:[523,659,784,1047],prayer:[880,660,880],test:[660,880,990]};
+function chime(kind='pomo'){if(S.sound===false&&kind!=='test')return;try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();const t=audioCtx.currentTime,notes=TONES[kind]||TONES.pomo,step=kind==='brk'?.16:.18;
+  notes.forEach((f,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=kind==='brk'?'triangle':'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+i*step);g.gain.linearRampToValueAtTime(.2,t+i*step+.02);g.gain.exponentialRampToValueAtTime(.001,t+i*step+.7);o.connect(g).connect(audioCtx.destination);o.start(t+i*step);o.stop(t+i*step+.75)})}catch(e){}}
+// browsers only allow sound after a tap: unlock audio on the first interaction
+addEventListener('pointerdown',()=>{try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume()}catch(e){}},{once:true});
+function pomoFinish(){
+  const p=P();const was=p.mode;p.running=false;p.endAt=null;
+  if(was==='focus'){
+    p.done=(p.done||0)+1;const h=pomoCredit(p.len.focus*60);
+    const next=p.done%4===0?'long':'short';pomoSetMode(next);
+    let msg=h?`Odak tamamlandı · +${p.len.focus} dk ${h.name}`:'Odak tamamlandı · mola zamanı';
+    if(p.nextId){const nh=S.habits.find(x=>x.id===p.nextId);if(nh){p.habitId=nh.id;msg+=` · sıradaki: ${nh.name}`}p.nextId=null;save()}
+    toast(msg);
+    buzz('pomo');chime('pomo');
+  }else{pomoSetMode('focus');toast('Mola bitti · yeni odak turu hazır');buzz('brk');chime('brk')}
+  touch();
+}
+pPlay.onclick=()=>{const p=P();
+  if(p.running){p.left=pomoLeft();p.running=false;p.endAt=null}
+  else{if(p.left<=0)p.left=p.len[p.mode]*60;if(p.startLeft==null)p.startLeft=p.left;p.running=true;p.endAt=Date.now()+p.left*1000;try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume()}catch(e){}}
+  save();renderPomo();startGlobe()};
+pSkip.onclick=()=>{const p=P();if(p.mode==='focus')return;
+  pomoSetMode('focus');p.left=p.len.focus*60;p.startLeft=p.left;p.running=true;p.endAt=Date.now()+p.left*1000;
+  try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume()}catch(e){}
+  save();renderPomo();startGlobe();const h=S.habits.find(x=>x.id===p.habitId);toast(h?`Mola atlandı · ${h.name} odak turu başladı`:'Mola atlandı · odak turu başladı')};
+pReset.onclick=()=>{const p=P();
+  if(p.mode==='focus'){const spent=(p.startLeft||p.len.focus*60)-pomoLeft();const h=pomoCredit(spent);if(h)toast(`+${fmtMin(spent/60)} ${h.name}`)}
+  pomoSetMode(p.mode);touch()};
+pHabit.onchange=()=>{const p=P();p.habitId=pHabit.value||null;if(p.nextId===p.habitId)p.nextId=null;save();renderPomo();renderList()};
+pNext.onchange=()=>{const p=P();p.nextId=pNext.value||null;if(p.nextId&&p.nextId===p.habitId){p.nextId=null;toast('Bu ders zaten şu an Pomodoro\'da')}save();renderPomo();renderList()};
+pNextClear.onclick=()=>{P().nextId=null;save();renderPomo();renderList()};
+function renderPomo(){
+  const p=P(),left=pomoLeft(),m=Math.floor(left/60),sc=left%60;
+  pTime.textContent=`${pad(m)}:${pad(sc)}`;
+  pPlay.textContent=p.running?'❚❚':'▶';pPlay.setAttribute('aria-label',p.running?'Duraklat':'Başlat');
+  pSkip.hidden=p.mode==='focus';
+  pomo.classList.toggle('run',!!p.running&&p.mode==='focus');pomo.classList.toggle('brk',p.mode!=='focus');
+  const h=S.habits.find(x=>x.id===p.habitId);
+  pSub.textContent=(p.mode==='focus'?'Odak':PM[p.mode])+(!p.running&&left<p.len[p.mode]*60?' (duraklatıldı)':'');
+  const opts=S.habits.slice().sort((a,b)=>(a.kind==='ders'?0:1)-(b.kind==='ders'?0:1));
+  const sig=opts.map(o=>o.id+o.name).join()+'|'+p.habitId;
+  if(p.nextId&&!S.habits.some(x=>x.id===p.nextId))p.nextId=null;
+  if(pHabit.dataset.sig!==sig){pHabit.dataset.sig=sig;
+    pHabit.innerHTML='<option value="">ders seç</option>'+opts.map(o=>`<option value="${o.id}"${o.id===p.habitId?' selected':''}>${esc(o.name)}</option>`).join('');}
+  const nsig=opts.map(o=>o.id+o.name).join()+'|'+p.nextId+'|'+p.habitId;
+  if(pNext.dataset.sig!==nsig){pNext.dataset.sig=nsig;
+    pNext.innerHTML='<option value="">Boş · seç ya da kart sürükle</option>'+opts.filter(o=>o.id!==p.habitId).map(o=>`<option value="${o.id}"${o.id===p.nextId?' selected':''}>${esc(o.emoji+' '+o.name)}</option>`).join('');}
+  pNextBox.classList.toggle('filled',!!p.nextId);pNextClear.hidden=!p.nextId;
+  const n=p.done||0;pDots.innerHTML=Array.from({length:Math.max(4,Math.ceil((n+1)/4)*4)},(_,i)=>`<i class="${i<n?'on':''}"></i>`).slice(0,8).join('');
+  pDots.setAttribute('aria-label',`Bugün ${n} odak turu`);
+  renderPlan();
+}
+function syncPomoSettings(){const p=P();sFocus.value=p.len.focus;sShort.value=p.len.short;sLong.value=p.len.long;
+  vSound.checked=S.sound!==false;vPomo.checked=vibOn('pomo');vBrk.checked=vibOn('brk');vPrayer.checked=vibOn('prayer')}
+[[vPomo,'pomo'],[vBrk,'brk'],[vPrayer,'prayer']].forEach(([el,k])=>el.onchange=()=>{S.vib=S.vib||{};S.vib[k]=el.checked;save();toast(el.checked?'Açıldı':'Kapatıldı')});
+vSound.onchange=()=>{S.sound=vSound.checked;save();toast(vSound.checked?'Sesler açıldı':'Sesler kapatıldı')};
+vTest.onclick=()=>{const ok=vibrateNow(VIB_PATTERNS.brk);chime('test');
+  vStatus.textContent=ok?'Titreşim gönderildi. Hissetmediysen telefonun sessiz/titreşim ayarına bak.':('vibrate' in navigator?'Bu görünümde titreşime izin verilmedi; uygulamayı kendi sitenden açınca çalışır.':'Bu cihaz ya da tarayıcı titreşimi desteklemiyor (iPhone/iPad).')};
+[[sFocus,'focus'],[sShort,'short'],[sLong,'long']].forEach(([el,k])=>el.onchange=()=>{const v=Math.max(1,Math.min(180,parseInt(el.value)||1));el.value=v;const p=P();p.len[k]=v;if(!p.running&&p.mode===k){p.left=v*60;p.startLeft=p.left}save();renderPomo();toast('Pomodoro süresi kaydedildi')});
+pomoInit();
+if(!P().habitId){const d=S.habits.find(h=>h.kind==='ders'&&h.type==='timer');if(d)P().habitId=d.id}
+setInterval(()=>{
+  const p=P();if(!p)return;
+  if(p.running&&pomoLeft()<=0)return pomoFinish();
+  if(view==='vToday'&&p.running)renderPomo();
+},500);
+
+setInterval(()=>{
+  if(view!=='vToday'||!sheet.hidden||!citySheet.hidden)return;
+  renderPrayer();if(S.pomo&&!S.pomo.running)renderPomo();if(S.timer){renderList();renderWeek()}
+},1000);
+
+aimAtCity();layout();render();
+if(document.fonts)document.fonts.ready.then(()=>draw());
+</script>
+
+</body>
+</html>
